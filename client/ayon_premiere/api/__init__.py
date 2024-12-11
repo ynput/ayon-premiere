@@ -4,10 +4,10 @@ Anything that isn't defined here is INTERNAL and unreliable for external use.
 
 """
 
-# from .ws_stub import (
-#     get_stub,
-# )
-#
+from .ws_stub import (
+    get_stub,
+)
+
 from .pipeline import (
     PremiereHost,
     ls,
@@ -28,7 +28,7 @@ from .pipeline import (
 #
 __all__ = [
     # ws_stub
-    # "get_stub",
+    "get_stub",
 
     # pipeline
     "PremiereHost",
