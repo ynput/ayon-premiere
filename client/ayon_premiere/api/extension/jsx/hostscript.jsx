@@ -495,14 +495,21 @@ function save(){
     /**
      * Saves current project
      */
-    app.project.save();  //TODO path is wrong, File instead
-}
+    try{
+        app.project.save();
+    } catch (error) {
+        return _prepareError("Cannot save current workfile");
+    }
 
 function saveAs(path){
     /**
      *   Saves current project as 'path'
      * */
-    return app.project.saveAs(path);
+    try{
+        app.project.saveAs(path);
+    } catch (error) {
+        return _prepareError("Cannot save file at " + path);
+    }
 }
 
 function getRenderInfo(comp_id){
