@@ -26,28 +26,50 @@ function getEnv(variable){
     return $.getenv(variable);
 }
 
+
+var kPProPrivateProjectMetadataURI	= "http://ns.adobe.com/premierePrivateProjectMetaData/1.0/";
+// Define a name for your new sequence
+var sequenceName = "AYON Metadata - DO NOT DELETE";
+//var ayonMetadataId = "ayon.premiere.metadata";
+
+var ayonMetadataId = "Column.PropertyText.Description"; //this is visible under Clip.Description
+
+
 function getMetadata(){
     /**
      *  Returns payload in 'Label' field of project's metadata
      *
      **/
-    if (ExternalObject.AdobeXMPScript === undefined){
-        ExternalObject.AdobeXMPScript =
-            new ExternalObject('lib:AdobeXMPScript');
+    if (app.isDocumentOpen()) {
+        var ayon_metadata_seq = getMetadataSeq();
+
+        if (!ayon_metadata_seq){
+            ayon_metadata_seq = createMetadataSeq(sequenceName)
+        }
+        if (ayon_metadata_seq) {
+            if (ExternalObject.AdobeXMPScript === undefined) {
+                ExternalObject.AdobeXMPScript = new ExternalObject('lib:AdobeXMPScript');
+            }
+            if (ExternalObject.AdobeXMPScript !== undefined) { // safety-conscious!
+                var projectMetadata	= ayon_metadata_seq.projectItem.getProjectMetadata();
+                var xmp	= new XMPMeta(projectMetadata);
+
+                var existing_metadata = xmp.doesPropertyExist(kPProPrivateProjectMetadataURI, ayonMetadataId);
+                if (!existing_metadata){
+                    existing_metadata = "[]";
+                    app.project.addPropertyToProjectMetadataSchema(ayonMetadataId, ayonMetadataId, 2);
+                    xmp.setProperty(kPProPrivateProjectMetadataURI, ayonMetadataId, existing_metadata);
+                    var str = xmp.serialize();
+                    ayon_metadata_seq.projectItem.setProjectMetadata(str, [ayonMetadataId]);
+                }
+                return xmp.getProperty(kPProPrivateProjectMetadataURI, ayonMetadataId);
+
+            }
+        } else {
+            return _prepareError("No file open currently");
+        }
     }
-
-    var proj = app.project;
-    var meta = new XMPMeta(app.project.xmpPacket);
-    var schemaNS = XMPMeta.getNamespaceURI("xmp");
-    var label = "xmp:Label";
-
-    if (meta.doesPropertyExist(schemaNS, label)){
-        var prop = meta.getProperty(schemaNS, label);
-        return prop.value;
-    }
-
-    return _prepareSingleValue([]);
-
+    return _prepareSingleValue("");
 }
 
 function imprint(payload){
@@ -57,20 +79,19 @@ function imprint(payload){
      * Args:
      *     payload (string): json content
      */
-    if (ExternalObject.AdobeXMPScript === undefined){
-        ExternalObject.AdobeXMPScript =
-            new ExternalObject('lib:AdobeXMPScript');
+    if (app.isDocumentOpen()) {
+        var ayon_metadata_seq = getMetadataSeq();
+        var projectMetadata	= ayon_metadata_seq.projectItem.getProjectMetadata();
+        var xmp	= new XMPMeta(projectMetadata);
+
+        if (ExternalObject.AdobeXMPScript === undefined){
+            ExternalObject.AdobeXMPScript =
+                new ExternalObject('lib:AdobeXMPScript');
+        }
+        xmp.setProperty(kPProPrivateProjectMetadataURI, ayonMetadataId, payload);
+        var str = xmp.serialize();
+        ayon_metadata_seq.projectItem.setProjectMetadata(str, [ayonMetadataId]);
     }
-
-    var proj = app.project;
-    var meta = new XMPMeta(app.project.xmpPacket);
-    var schemaNS = XMPMeta.getNamespaceURI("xmp");
-    var label = "xmp:Label";
-
-    meta.setProperty(schemaNS, label, payload);
-
-    app.project.xmpPacket = meta.serialize();
-
 }
 
 
@@ -146,16 +167,16 @@ function getItems(comps, folders, footages){
      *     (list) of JSON items
      */
     var items = []
-    for (i = 1; i <= app.project.items.length; ++i){
-        var item = app.project.items[i];
-        if (!item){
-            continue;
-        }
-        var ret = _getItem(item, comps, folders, footages);
-        if (ret){
-            items.push(ret);
-        }
-    }
+    // for (i = 1; i <= app.project.items.length; ++i){
+    //     var item = app.project.items[i];
+    //     if (!item){
+    //         continue;
+    //     }
+    //     var ret = _getItem(item, comps, folders, footages);
+    //     if (ret){
+    //         items.push(ret);
+    //     }
+    // }
     return '[' + items.join() + ']';
 
 }
@@ -940,6 +961,37 @@ function addItemInstead(placeholder_item_id, item_id){
         }
     }
     app.endUndoGroup();
+}
+
+function getMetadataSeq(){
+    /**
+     * Returns dummy sequence used to store AYON metadata
+     */
+    var sequences = app.project.sequences;
+    if (sequences){
+        for (var i = 0; i < sequences.length; i++) {
+            var sequence = sequences[i];
+            if (sequence.name == sequenceName){
+                return sequence;
+            }
+        }
+    }
+}
+
+function createMetadataSeq(sequenceName){
+    /**
+     * Creates dummy sequence for storing AYON metadata
+     * 
+     * It is not possible to store metadata directly on project itself
+     * 
+     * This approach limits triggering sequence dialog for artist!
+     */
+    var project = app.project;
+
+    // TODO 
+    var presetPath = "c:\\Program Files\\Adobe\\Adobe Premiere Pro 2025\\Settings\\SequencePresets\\HD 1080p\\HD 1080p 29.97 fps.sqpreset"
+    var newSequence = project.newSequence(sequenceName, presetPath);
+    return newSequence
 }
 
 function _prepareSingleValue(value){
