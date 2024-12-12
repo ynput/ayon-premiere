@@ -4,7 +4,6 @@
 """
 import json
 import logging
-import os.path
 
 import attr
 
@@ -16,15 +15,17 @@ from .webserver import WebServerTool
 class ConnectionNotEstablishedYet(Exception):
     pass
 
+# TODO still contains unneeded/uniplemented code inherited from AE impl
 
 @attr.s
 class PPROItem(object):
     """
-        Object denoting Item in PPRO. Each item is created in AE by any Loader,
-        but contains same fields, which are being used in later processing.
+        Object denoting Item in PPRO. Each item is created in PPRO by any
+        Loader, but contains same fields, which are being used in
+        later processing.
     """
     # metadata
-    id = attr.ib()  # id created by AE, could be used for querying
+    id = attr.ib()  # id created by PPRO, could be used for querying
     name = attr.ib()  # name of item
 
 
@@ -72,7 +73,7 @@ class PremiereServerStub():
 
     def get_metadata(self):
         """
-            Get complete stored JSON with metadata from AE.Metadata.Label
+            Get complete stored JSON with metadata from dummy AYON sequence
             field.
 
             It contains containers loaded by any Loader OR instances created
@@ -93,7 +94,7 @@ class PremiereServerStub():
             Used as filter to pick metadata for specific 'item' only.
 
         Args:
-            item (AEItem): pulled info from AE
+            item (PPROItem): pulled info from PPRO
             layers_meta (dict): full list from Headline
                 (load and inject for better performance in loops)
         Returns:
@@ -161,9 +162,9 @@ class PremiereServerStub():
 
         payload = json.dumps(cleaned_data, indent=4)
 
-        res = self.websocketserver.call(self.client.call
-                                        ('Premiere.imprint',
-                                         payload=payload))
+        res = self.websocketserver.call(
+            self.client.call('Premiere.imprint', payload=payload)
+        )
         return self._handle_return(res)
 
     def get_active_document_full_name(self):
@@ -369,7 +370,7 @@ class PremiereServerStub():
             Green color is loaded asset, blue is created asset
         Args:
             item_id (int):
-            color_idx (int): 0-16 Label colors from AE Project view
+            color_idx (int): 0-16 Label colors from PPRO Project view
         """
         res = self.websocketserver.call(self.client.call
                                         ('Premiere.set_label_color',
@@ -404,7 +405,7 @@ class PremiereServerStub():
         """
             Set work area to predefined values (from Ftrack).
             Work area directs what gets rendered.
-            Beware of rounding, AE expects seconds, not frames directly.
+            Beware of rounding, PPRO expects seconds, not frames directly.
 
         Args:
             comp_id (int):
@@ -638,7 +639,7 @@ class PremiereServerStub():
             try:
                 parsed = json.loads(res)
             except json.decoder.JSONDecodeError:
-                raise ValueError("Received broken JSON {}".format(res))
+                raise ValueError("Received broken JSON '{}'".format(res))
 
             if not parsed:  # empty list
                 return parsed
