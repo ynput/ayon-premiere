@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="6.0"
+				   ExtensionBundleId="io.ynput.PPRO.panel"
+				   ExtensionBundleVersion="1.0"
+				   ExtensionBundleName="AYON Premiere"
+				   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<ExtensionList>
+		<Extension Id="io.ynput.PPRO.panel" Version="1.0.0" />
+	</ExtensionList>
+	<ExecutionEnvironment>
+		<HostList>
+			<Host Name="PPRO" Version="11.0" />
+		</HostList>
+		<LocaleList>
+			<Locale Code="All" />
+		</LocaleList>
+		<RequiredRuntimeList>
+			<RequiredRuntime Name="CSXS" Version="6.0" />
+		</RequiredRuntimeList>
+	</ExecutionEnvironment>
+
+	<DispatchInfoList>
+		<Extension Id="io.ynput.PPRO.panel">
+			<DispatchInfo >
+				<Resources>
+					<MainPath>./index.html</MainPath>
+					<ScriptPath>./jsx/hostscript.jsx</ScriptPath>
+				</Resources>
+				<Lifecycle>
+					<AutoVisible>true</AutoVisible>
+					<StartOn>
+						<!-- PPro dispatches this event on startup -->
+						<!-- <Event>com.adobe.csxs.events.ApplicationActivate</Event> -->
+                    </StartOn>
+				</Lifecycle>
+				<UI>
+					<Type>Panel</Type>
+					<Menu>AYON</Menu>
+					<Geometry>
+						<Size>
+							<Height>200</Height>
+							<Width>100</Width>
+						</Size>
+					</Geometry>
+					<Icons>
+						<Icon Type="Normal">./icons/ayon_logo.png</Icon>
+						<Icon Type="RollOver">./icons/iconRollover.png</Icon>
+						<Icon Type="Disabled">./icons/iconDisabled.png</Icon>
+						<Icon Type="DarkNormal">./icons/iconDarkNormal.png</Icon>
+						<Icon Type="DarkRollOver">./icons/iconDarkRollover.png</Icon>
+					</Icons>
+				</UI>
+			</DispatchInfo>
+		</Extension>
+	</DispatchInfoList>
+</ExtensionManifest>
