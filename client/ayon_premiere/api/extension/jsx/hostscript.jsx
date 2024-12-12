@@ -1007,7 +1007,3 @@ function _prepareSingleValue(value){
 function _prepareError(error_msg){
     return JSON.stringify({"error": error_msg})
 }
-
-
-//fileOpen("c:\\projects\\ayon_dev\\sh01\\work\\premiere_comp\\ad_sh01_premiere_comp_v005.prpoj");
-// let res = saveAs('C:\\projects\\ayon_dev\\sh01\\work\\premiere_comp\\ad_sh01_premiere_comp_v002.prpoj')
