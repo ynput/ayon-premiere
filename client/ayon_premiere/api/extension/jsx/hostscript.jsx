@@ -500,6 +500,7 @@ function save(){
     } catch (error) {
         return _prepareError("Cannot save current workfile");
     }
+}
 
 function saveAs(path){
     /**
@@ -995,8 +996,13 @@ function createMetadataSeq(sequenceName){
      */
     var project = app.project;
 
-    // TODO 
-    var presetPath = "c:\\Program Files\\Adobe\\Adobe Premiere Pro 2025\\Settings\\SequencePresets\\HD 1080p\\HD 1080p 29.97 fps.sqpreset"
+    // random preset, just to not show dialog
+    var presetPath = app.path + "Settings/SequencePresets/HD 1080p/HD 1080p 29.97 fps.sqpreset";
+
+    if ($.os.indexOf("Windows") !== -1) {
+        presetPath = presetPath.replace(/\//g, "\\");
+    } 
+
     var newSequence = project.newSequence(sequenceName, presetPath);
     return newSequence
 }
