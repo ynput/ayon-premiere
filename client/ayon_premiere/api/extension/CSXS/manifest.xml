@@ -30,7 +30,7 @@
 					<AutoVisible>true</AutoVisible>
 					<StartOn>
 						<!-- PPro dispatches this event on startup -->
-						<Event>com.adobe.csxs.events.ApplicationActivate</Event>
+						<!-- <Event>com.adobe.csxs.events.ApplicationActivate</Event> -->
                     </StartOn>
 				</Lifecycle>
 				<UI>
