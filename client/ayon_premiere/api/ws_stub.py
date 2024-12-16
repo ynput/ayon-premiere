@@ -388,7 +388,7 @@ class PremiereServerStub():
                 comp_id (int):
 
             Returns:
-                (AEItem)
+                (PPROItem)
 
         """
         res = self.websocketserver.call(self.client.call
@@ -454,7 +454,7 @@ class PremiereServerStub():
         """ Get render queue info for render purposes
 
             Returns:
-               (list) of (AEItem): with 'file_name' field
+               (list) of (PPROItem): with 'file_name' field
         """
         res = self.websocketserver.call(self.client.call
                                         ('Premiere.get_render_info',
@@ -497,7 +497,7 @@ class PremiereServerStub():
                 add as layers
 
             Returns:
-                (AEItem): object with id of created folder, all imported images
+                (PPROItem): object with id of created folder, all imported images
         """
         res = self.websocketserver.call(self.client.call
                                         ('Premiere.import_background',
@@ -523,7 +523,7 @@ class PremiereServerStub():
                 files (list): list of absolute paths to import and
                     add as layers
             Returns:
-                (AEItem): object with id of created folder, all imported images
+                (PPROItem): object with id of created folder, all imported images
         """
         res = self.websocketserver.call(self.client.call
                                         ('Premiere.reload_background',
@@ -659,9 +659,9 @@ class PremiereServerStub():
 
     def _to_records(self, payload):
         """
-            Converts string json representation into list of AEItem
+            Converts string json representation into list of PPROItem
             dot notation access to work.
-        Returns: <list of AEItem>
+        Returns: <list of PPROItem>
             payload(dict): - dictionary from json representation, expected to
                 come from _handle_return
         """
@@ -678,26 +678,28 @@ class PremiereServerStub():
             payload = [payload]
 
         ret = []
-        # convert to AEItem to use dot donation
+        # convert to PPROItem to use dot donation
         for d in payload:
             if not d:
                 continue
             # currently implemented and expected fields
-            item = AEItem(d.get('id'),
-                          d.get('name'),
-                          d.get('type'),
-                          d.get('members'),
-                          d.get('frameStart'),
-                          d.get('framesDuration'),
-                          d.get('frameRate'),
-                          d.get('file_name'),
-                          d.get("instance_id"),
-                          d.get("width"),
-                          d.get("height"),
-                          d.get("is_placeholder"),
-                          d.get("uuid"),
-                          d.get("path"),
-                          d.get("containing_comps"),)
+            item = PPROItem(
+                d.get('id'),
+                d.get('name'),
+                d.get('type'),
+                d.get('members'),
+                d.get('frameStart'),
+                d.get('framesDuration'),
+                d.get('frameRate'),
+                d.get('file_name'),
+                d.get("instance_id"),
+                d.get("width"),
+                d.get("height"),
+                d.get("is_placeholder"),
+                d.get("uuid"),
+                d.get("path"),
+                d.get("containing_comps"),
+            )
 
             ret.append(item)
         return ret
