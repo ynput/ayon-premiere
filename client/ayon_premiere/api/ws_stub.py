@@ -36,8 +36,8 @@ class PremiereServerStub():
         is opened).
         'self.websocketserver.call' is used as async wrapper
     """
-    PUBLISH_ICON = '\u2117 '
-    LOADED_ICON = '\u25bc'
+    PUBLISH_ICON = "\u2117 "
+    LOADED_ICON = "\u25bc"
 
     def __init__(self):
         self.websocketserver = WebServerTool.get_instance()
@@ -67,7 +67,7 @@ class PremiereServerStub():
         Returns: None
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.open', path=path))
+                                        ("Premiere.open", path=path))
 
         return self._handle_return(res)
 
@@ -83,7 +83,7 @@ class PremiereServerStub():
             (list)
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_metadata'))
+                                        ("Premiere.get_metadata"))
         metadata = self._handle_return(res)
 
         return metadata or []
@@ -103,8 +103,8 @@ class PremiereServerStub():
         if layers_meta is None:
             layers_meta = self.get_metadata()
         for item_meta in layers_meta:
-            if 'container' in item_meta.get('id') and \
-                    str(item.id) == str(item_meta.get('members')[0]):
+            if "container" in item_meta.get("id") and \
+                    str(item.id) == str(item_meta.get("members")[0]):
                 return item_meta
 
         self.log.debug("Couldn't find layer metadata")
@@ -131,8 +131,8 @@ class PremiereServerStub():
         is_new = True
 
         for item_meta in items_meta:
-            if ((item_meta.get('members') and
-                    str(item_id) == str(item_meta.get('members')[0])) or
+            if ((item_meta.get("members") and
+                    str(item_id) == str(item_meta.get("members")[0])) or
                     item_meta.get("instance_id") == item_id):
                 is_new = False
                 if data:
@@ -163,7 +163,7 @@ class PremiereServerStub():
         payload = json.dumps(cleaned_data, indent=4)
 
         res = self.websocketserver.call(
-            self.client.call('Premiere.imprint', payload=payload)
+            self.client.call("Premiere.imprint", payload=payload)
         )
         return self._handle_return(res)
 
@@ -173,7 +173,7 @@ class PremiereServerStub():
         Returns(string): file name
         """
         res = self.websocketserver.call(self.client.call(
-            'Premiere.get_active_document_full_name'))
+            "Premiere.get_active_document_full_name"))
 
         return self._handle_return(res)
 
@@ -183,7 +183,7 @@ class PremiereServerStub():
         Returns(string): file name
         """
         res = self.websocketserver.call(self.client.call(
-            'Premiere.get_active_document_name'))
+            "Premiere.get_active_document_name"))
 
         return self._handle_return(res)
 
@@ -205,7 +205,7 @@ class PremiereServerStub():
             (list) of namedtuples
         """
         res = self.websocketserver.call(
-            self.client.call('Premiere.get_items',
+            self.client.call("Premiere.get_items",
                              comps=comps,
                              folders=folders,
                              footages=footages)
@@ -219,7 +219,7 @@ class PremiereServerStub():
             items (list): of int item ids
         """
         self.websocketserver.call(
-            self.client.call('Premiere.select_items', items=items))
+            self.client.call("Premiere.select_items", items=items))
 
 
     def get_selected_items(self, comps, folders=False, footages=False):
@@ -251,7 +251,7 @@ class PremiereServerStub():
                 item_type (str): COMP|FOLDER
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.add_item',
+                                        ("Premiere.add_item",
                                          name=name,
                                          item_type=item_type))
 
@@ -281,7 +281,7 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(
-            self.client.call('Premiere.import_file',
+            self.client.call("Premiere.import_file",
                              path=path,
                              item_name=item_name,
                              import_options=import_options)
@@ -300,7 +300,7 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.replace_item',
+                                        ("Premiere.replace_item",
                                          item_id=item_id,
                                          path=path, item_name=item_name))
 
@@ -315,7 +315,7 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.rename_item',
+                                        ("Premiere.rename_item",
                                          item_id=item_id,
                                          item_name=item_name))
 
@@ -328,7 +328,7 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.delete_item',
+                                        ("Premiere.delete_item",
                                          item_id=item_id))
 
         return self._handle_return(res)
@@ -355,7 +355,7 @@ class PremiereServerStub():
 
         payload = json.dumps(cleaned_data, indent=4)
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.imprint',
+                                        ("Premiere.imprint",
                                          payload=payload))
 
         return self._handle_return(res)
@@ -373,7 +373,7 @@ class PremiereServerStub():
             color_idx (int): 0-16 Label colors from PPRO Project view
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.set_label_color',
+                                        ("Premiere.set_label_color",
                                          item_id=item_id,
                                          color_idx=color_idx))
 
@@ -392,7 +392,7 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_comp_properties',
+                                        ("Premiere.get_comp_properties",
                                          item_id=comp_id
                                          ))
 
@@ -416,7 +416,7 @@ class PremiereServerStub():
             height (int): resolution height
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.set_comp_properties',
+                                        ("Premiere.set_comp_properties",
                                          item_id=comp_id,
                                          start=start,
                                          duration=duration,
@@ -431,7 +431,7 @@ class PremiereServerStub():
         Returns: None
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.save'))
+                                        ("Premiere.save"))
 
         return self._handle_return(res)
 
@@ -444,7 +444,7 @@ class PremiereServerStub():
         Returns: None
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.saveAs',
+                                        ("Premiere.saveAs",
                                          image_path=project_path,
                                          as_copy=as_copy))
 
@@ -457,7 +457,7 @@ class PremiereServerStub():
                (list) of (PPROItem): with 'file_name' field
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_render_info',
+                                        ("Premiere.get_render_info",
                                          comp_id=comp_id))
 
         records = self._to_records(self._handle_return(res))
@@ -472,7 +472,7 @@ class PremiereServerStub():
                 (str): absolute path url
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_audio_url',
+                                        ("Premiere.get_audio_url",
                                          item_id=item_id))
 
         return self._handle_return(res)
@@ -500,7 +500,7 @@ class PremiereServerStub():
                 (PPROItem): object with id of created folder, all imported images
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.import_background',
+                                        ("Premiere.import_background",
                                          comp_id=comp_id,
                                          comp_name=comp_name,
                                          files=files))
@@ -526,7 +526,7 @@ class PremiereServerStub():
                 (PPROItem): object with id of created folder, all imported images
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.reload_background',
+                                        ("Premiere.reload_background",
                                          comp_id=comp_id,
                                          comp_name=comp_name,
                                          files=files))
@@ -546,7 +546,7 @@ class PremiereServerStub():
                 comp already found previously
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.add_item_as_layer',
+                                        ("Premiere.add_item_as_layer",
                                          comp_id=comp_id,
                                          item_id=item_id))
 
@@ -565,7 +565,7 @@ class PremiereServerStub():
                 item_id (int): loaded FootageItem id
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.add_item_instead_placeholder',  # noqa
+                                        ("Premiere.add_item_instead_placeholder",  # noqa
                                          placeholder_item_id=placeholder_item_id,  # noqa
                                          item_id=item_id))
 
@@ -586,7 +586,7 @@ class PremiereServerStub():
                 duration (int)
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.add_placeholder',
+                                        ("Premiere.add_placeholder",
                                          name=name,
                                          width=width,
                                          height=height,
@@ -603,7 +603,7 @@ class PremiereServerStub():
         Returns: None
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.render',
+                                        ("Premiere.render",
                                          folder_url=folder_url,
                                          comp_id=comp_id))
         return self._handle_return(res)
@@ -611,26 +611,26 @@ class PremiereServerStub():
     def get_extension_version(self):
         """Returns version number of installed extension."""
         res = self.websocketserver.call(self.client.call(
-            'Premiere.get_extension_version'))
+            "Premiere.get_extension_version"))
 
         return self._handle_return(res)
 
     def get_app_version(self):
         """Returns version number of installed application (17.5...)."""
         res = self.websocketserver.call(self.client.call(
-            'Premiere.get_app_version'))
+            "Premiere.get_app_version"))
 
         return self._handle_return(res)
 
     def close(self):
-        res = self.websocketserver.call(self.client.call('Premiere.close'))
+        res = self.websocketserver.call(self.client.call("Premiere.close"))
 
         return self._handle_return(res)
 
     def print_msg(self, msg):
         """Triggers Javascript alert dialog."""
         self.websocketserver.call(self.client.call
-                                  ('Premiere.print_msg',
+                                  ("Premiere.print_msg",
                                    msg=msg))
 
     def _handle_return(self, res):
@@ -684,14 +684,14 @@ class PremiereServerStub():
                 continue
             # currently implemented and expected fields
             item = PPROItem(
-                d.get('id'),
-                d.get('name'),
-                d.get('type'),
-                d.get('members'),
-                d.get('frameStart'),
-                d.get('framesDuration'),
-                d.get('frameRate'),
-                d.get('file_name'),
+                d.get("id"),
+                d.get("name"),
+                d.get("type"),
+                d.get("members"),
+                d.get("frameStart"),
+                d.get("framesDuration"),
+                d.get("frameRate"),
+                d.get("file_name"),
                 d.get("instance_id"),
                 d.get("width"),
                 d.get("height"),
