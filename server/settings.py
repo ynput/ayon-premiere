@@ -1,10 +1,19 @@
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
-DEFAULT_VALUES = {}
+DEFAULT_VALUES = {
+    "hooks": {
+        "InstallAyonExtensionToPremiere": {
+            "exman_path": "",
+            "enabled": False,
+        }
+    }
+}
 
 
-class MySettings(BaseSettingsModel):
-    pass
+class PremiereSettings(BaseSettingsModel):
+    hooks: HooksModel = SettingsField(
+        default_factory=HooksModel, title="Hooks"
+    )
 
 
 class InstallAyonExtensionSettingsModel(BaseSettingsModel):
