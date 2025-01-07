@@ -1,6 +1,7 @@
 import subprocess
 import os
 
+from ayon_premiere import PREMIERE_ADDON_ROOT
 from ayon_applications import PreLaunchHook, LaunchTypes
 
 
@@ -23,31 +24,28 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             )
 
     def inner_execute(self, settings):
-        self.log.info("Installing AYON extension.")
+        self.log.info("Installing AYON Premiere extension.")
 
         exman_path = settings["hooks"]["InstallAyonExtensionToPremiere"]["exman_path"]
         if not exman_path:
-            # no exman path provided
-            # TODO: add a error message here
+            self.log.warning("ExManCmd path was not provided. Cancelling installation.")
             return
 
         exman_path = os.path.normpath(exman_path)
         if not os.path.exists(exman_path):
-            # path invalid
-            # TODO: add error
+            self.log.warning(
+                f"Provided ExManCmd path: '{exman_path}', does not exist. Cancelling installation."
+            )
             return
 
-        local_app_data = os.environ["LOCALAPPDATA"]
-
-        # TODO: dynamic path to relavant addon version
-        addon_path = os.path.join(
-            local_app_data,
-            r"Ynput\AYON\addons\premiere_0.1.0-dev.2\ayon_premiere\api\extension.zxp",
-        )
-
-        command = [exman_path, "/install", addon_path]
-
         try:
+            addon_path = os.path.join(
+                PREMIERE_ADDON_ROOT,
+                rf"api\extension.zxp",
+            )
+
+            command = [exman_path, "/install", addon_path]
+
             process = subprocess.Popen(
                 command,
                 stdout=subprocess.PIPE,
