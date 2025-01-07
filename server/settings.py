@@ -1,20 +1,5 @@
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
-DEFAULT_VALUES = {
-    "hooks": {
-        "InstallAyonExtensionToPremiere": {
-            "exman_path": "",
-            "enabled": False,
-        }
-    }
-}
-
-
-class PremiereSettings(BaseSettingsModel):
-    hooks: HooksModel = SettingsField(
-        default_factory=HooksModel, title="Hooks"
-    )
-
 
 class InstallAyonExtensionSettingsModel(BaseSettingsModel):
     exman_path: str = SettingsField("", title="Path to ExManCmd executable")
@@ -29,3 +14,19 @@ class HooksModel(BaseSettingsModel):
             description="Installs the AYON extension using the supplied ExManCmd on startup.",
         )
     )
+
+
+class PremiereSettings(BaseSettingsModel):
+    hooks: HooksModel = SettingsField(
+        default_factory=HooksModel, title="Hooks"
+    )
+
+
+DEFAULT_VALUES = {
+    "hooks": {
+        "InstallAyonExtensionToPremiere": {
+            "exman_path": "",
+            "enabled": False,
+        }
+    }
+}
