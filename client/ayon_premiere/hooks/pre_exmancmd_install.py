@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 from ayon_applications import PreLaunchHook, LaunchTypes
 
@@ -12,9 +13,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
     def execute(self):
         try:
             settings = self.data["project_settings"][self.host_name]
-            if not settings["hooks"]["InstallAyonExtensionToPremiere"][
-                "enabled"
-            ]:
+            if not settings["hooks"]["InstallAyonExtensionToPremiere"]["enabled"]:
                 return
             self.inner_execute(settings)
         except Exception:
@@ -24,11 +23,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             )
 
     def inner_execute(self, settings):
-        self.log.warning("Installing AYON extension.")
+        self.log.info("Installing AYON extension.")
 
-        exman_path = settings["hooks"]["InstallAyonExtensionToPremiere"][
-            "exman_path"
-        ]
+        exman_path = settings["hooks"]["InstallAyonExtensionToPremiere"]["exman_path"]
         if not exman_path:
             # no exman path provided
             # TODO: add a error message here
@@ -45,16 +42,16 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
         # TODO: dynamic path to relavant addon version
         addon_path = os.path.join(
             local_app_data,
-            r"Ynput\AYON\addons\premiere\ayon_premiere\api\extension.zxp",
+            r"Ynput\AYON\addons\premiere_0.1.0-dev.2\ayon_premiere\api\extension.zxp",
         )
 
-        command = ["ExManCmd.exe", "/install", addon_path]
+        command = [exman_path, "/install", addon_path]
 
         try:
             process = subprocess.Popen(
                 command,
-                stdout=subprocess.Pipe,
-                universal_newline=True,
+                stdout=subprocess.PIPE,
+                universal_newlines=True,
                 env=dict(os.environ),
             )
             process.communicate()
@@ -63,10 +60,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             else:
                 self.log.warning("Failed to install AYON extension")
         except Exception:
-            self.log.warning(Exception)
-
-        self.log.warning(
-            self.data["project_settings"][self.host_name]["hooks"][
-                "InstallAyonExtensionToPremiere"
-            ]["exman_path"]
-        )
+            self.log.warning(
+                "Processing of {} crashed.".format(self.__class__.__name__),
+                exc_info=True,
+            )
