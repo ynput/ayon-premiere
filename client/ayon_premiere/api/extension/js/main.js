@@ -121,8 +121,8 @@ function main(websocket_url){
 
     RPC.addRoute('Premiere.get_items', function (data) {
         log.warn('Server called client route "get_items":', data);
-        return runEvalScript("getItems("  + data.comps + "," +
-                                            data.folders + "," +
+        return runEvalScript("getItems("  + data.bins + "," +
+                                            data.sequences + "," +
                                             data.footages + ")")
             .then(function(result){
                 log.warn("get_items: " + result);
@@ -146,18 +146,17 @@ function main(websocket_url){
                                                    data.folders + "," +
                                                    data.footages  + ")")
             .then(function(result){
-                log.warn("get_items: " + result);
+                log.warn("get_selected_items: " + result);
                 return result;
             });
     });
 
-    RPC.addRoute('Premiere.import_file', function (data) {
-        log.warn('Server called client route "import_file":', data);
-        var escapedPath = EscapeStringForJSX(data.path);
-        return runEvalScript("importFile('" + escapedPath +"', " +
+    RPC.addRoute('Premiere.import_files', function (data) {
+        log.warn('Server called client route "import_files":', data);
+        var escapedPaths = data.paths.map(path => EscapeStringForJSX(path));
+        return runEvalScript("importFiles(" + JSON.stringify(escapedPaths) + ", " +
                                          "'" + data.item_name + "'," +
-                                         "'" + JSON.stringify(
-                                         data.import_options) + "')")
+                                         data.is_image_sequence + ")")
             .then(function(result){
                 log.warn("importFile: " + result);
                 return result;
@@ -166,10 +165,11 @@ function main(websocket_url){
 
     RPC.addRoute('Premiere.replace_item', function (data) {
         log.warn('Server called client route "replace_item":', data);
-        var escapedPath = EscapeStringForJSX(data.path);
-        return runEvalScript("replaceItem(" + data.item_id + ", " +
-                                     "'" + escapedPath + "', " +
-                                     "'" + data.item_name + "')")
+        var escapedPaths = data.paths.map(path => EscapeStringForJSX(path));
+        return runEvalScript("replaceItem('" + data.item_id + "', " +
+                                     JSON.stringify(escapedPaths) + ", " +
+                                     "'" + data.item_name + "'," +
+                                     data.is_image_sequence + ")")
             .then(function(result){
                 log.warn("replaceItem: " + result);
                 return result;
@@ -188,7 +188,7 @@ function main(websocket_url){
 
     RPC.addRoute('Premiere.delete_item', function (data) {
         log.warn('Server called client route "delete_item":', data);
-        return runEvalScript("deleteItem(" + data.item_id + ")")
+        return runEvalScript("deleteItem('" + data.item_id + "')")
             .then(function(result){
                 log.warn("deleteItem: " + result);
                 return result;

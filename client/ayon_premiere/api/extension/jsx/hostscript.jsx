@@ -154,31 +154,126 @@ function addItem(name, item_type){
 
 }
 
-function getItems(comps, folders, footages){
+function getItems(bins, sequences, footages){
     /**
      * Returns JSON representation of compositions and
      * if 'collectLayers' then layers in comps too.
      *
      * Args:
-     *     comps (bool): return selected compositions
-     *     folders (bool): return folders
+     *     bins (bool): return selected compositions
+     *     sequences (bool): return folders
      *     footages (bool): return FootageItem
      * Returns:
      *     (list) of JSON items
      */
-    var items = []
-    // for (i = 1; i <= app.project.items.length; ++i){
-    //     var item = app.project.items[i];
-    //     if (!item){
-    //         continue;
-    //     }
-    //     var ret = _getItem(item, comps, folders, footages);
-    //     if (ret){
-    //         items.push(ret);
-    //     }
-    // }
-    return '[' + items.join() + ']';
+    var projectItems = [];
 
+    var rootFolder = app.project.rootItem;
+    // walk through root folder of project to differentiate between bins, sequences and clips
+    for (var i = 0; i < rootFolder.children.numItems; i++) {
+      // $.pype.log('\nroot item at ' + i + " is of type " + rootFolder.children[i].type);
+      var item = rootFolder.children[i];
+
+      if (item.type === 2) { // bin
+        walkBins(item, bins, sequences, footages);
+      } else if (item.type === 1 && footages && item.getMediaPath()) {
+        projectItems.push(prepareItemMetadata(item));
+      }
+    }
+
+    function prepareItemMetadata(item){
+        var item_type = '';
+        var path = '';
+        if (item.type == 1){
+            item_type = "footage";
+            path = item.getMediaPath();
+        }else if (item.type == 2){
+            item_type = "bin";
+        }
+        var item = {
+            "name": item.name,
+            "id": item.nodeId,
+            "type": item_type,
+            "path": path,
+            // "containing_comps": containing_comps
+        };
+        return JSON.stringify(item);
+    }
+
+    // walk through bins recursively
+    function walkBins (bin, bins, sequences, footages) { // eslint-disable-line no-unused-vars
+
+      if (bins){
+        projectItems.push(prepareItemMetadata(bin));
+      }
+      for (var i = 0; i < bin.children.numItems; i++) {
+        var object = bin.children[i];
+        // $.writeln(bin.name + ' has ' + object + ' ' + object.name  + ' of type ' +  object.type + ' and has mediapath ' + object.getMediaPath() );
+        if (object.type === 2) { // bin
+          // $.writeln(object.name  + ' has ' +  object.children.numItems  );
+          for (var j = 0; j < object.children.numItems; j++) {
+            var obj = object.children[j];
+            if (obj.type === 1 && obj.getMediaPath()) { // clip  in sub bin
+              // $.writeln(object.name  + ' has ' + obj + ' ' +  obj.name  );
+              projectItems.push(obj);
+            } else if (obj.type === 2) { // bin
+              walkBins(obj);
+            }
+          }
+        } else if (object.type === 1 && footages && object.getMediaPath()) { // clip in bin in root
+          // $.pype.log(bin.name + ' has ' + object + ' ' + object.name );
+          projectItems.push(prepareItemMetadata(object));
+        }
+      }
+    }
+    $.writeln('\nprojectItems:' + projectItems.length + ' ' + projectItems);
+
+    return '[' + projectItems.join() + ']';
+
+}
+
+function _getItem(item, bins, sequences, footages){
+    /**
+     * Auxiliary function as project items and selections
+     * are indexed in different way :/
+     * Refactor
+     */
+    var item_type = '';
+    var path = '';
+    var containing_comps = [];
+    if (item instanceof FolderItem){
+        item_type = 'folder';
+        if (!folders){
+            return "{}";
+        }
+    }
+    if (item instanceof FootageItem){
+        if (!footages){
+            return "{}";
+        }
+        item_type = 'footage';
+        if (item.file){
+            path = item.file.fsName;
+        }
+        if (item.usedIn){
+            for (j = 0; j < item.usedIn.length; ++j){
+                containing_comps.push(item.usedIn[j].id);
+            }
+        }
+    }
+    if (item instanceof CompItem){
+        item_type = 'comp';
+        if (!comps){
+            return "{}";
+        }
+    }
+
+    var item = {"name": item.name,
+                "id": item.noteId,
+                "type": item_type,
+                "path": path,
+                "containing_comps": containing_comps};
+    return JSON.stringify(item);
 }
 
 function selectItems(items){
@@ -224,117 +319,124 @@ function getSelectedItems(comps, folders, footages){
     return '[' + items.join() + ']';
 }
 
-function _getItem(item, comps, folders, footages){
-    /**
-     * Auxiliary function as project items and selections
-     * are indexed in different way :/
-     * Refactor
-     */
-    var item_type = '';
-    var path = '';
-    var containing_comps = [];
-    if (item instanceof FolderItem){
-        item_type = 'folder';
-        if (!folders){
-            return "{}";
-        }
-    }
-    if (item instanceof FootageItem){
-        if (!footages){
-            return "{}";
-        }
-        item_type = 'footage';
-        if (item.file){
-            path = item.file.fsName;
-        }
-        if (item.usedIn){
-            for (j = 0; j < item.usedIn.length; ++j){
-                containing_comps.push(item.usedIn[j].id);
-            }
-        }
-    }
-    if (item instanceof CompItem){
-        item_type = 'comp';
-        if (!comps){
-            return "{}";
-        }
-    }
 
-    var item = {"name": item.name,
-                "id": item.id,
-                "type": item_type,
-                "path": path,
-                "containing_comps": containing_comps};
-    return JSON.stringify(item);
-}
-
-function importFile(path, item_name, import_options){
+function importFiles(paths, item_name, is_image_sequence){
     /**
-     * Imports file (image tested for now) as a FootageItem.
-     * Creates new composition
+     * Imports file(s) into bin.
      *
      * Args:
-     *    path (string): absolute path to image file
-     *    item_name (string): label for composition
+     *    paths (list[str]): json list with absolute paths to source files
+     *    item_name (string): label for bin
+     *    is_image_sequence (bool): files loaded are numbered
+     *       file sequence
      * Returns:
      *    JSON {name, id}
      */
-    var comp;
+    //paths = JSON.parse(paths);
     var ret = {};
-    try{
-        import_options = JSON.parse(import_options);
-    } catch (e){
-        return _prepareError("Couldn't parse import options " + import_options);
-    }
+    var suppressUI = true;
+    var importAsNumberedStills = is_image_sequence;
 
-    app.beginUndoGroup("Import File");
-    fp = new File(path);
+    var targetBin = app.project.rootItem.createBin(item_name);
+
+    fp = new File(paths[0]);
     if (fp.exists){
         try {
-            im_opt = new ImportOptions(fp);
-            importAsType = import_options["ImportAsType"];
-
-            if ('ImportAsType' in import_options){ // refactor
-                if (importAsType.indexOf('COMP') > 0){
-                    im_opt.importAs = ImportAsType.COMP;
-                }
-                if (importAsType.indexOf('FOOTAGE') > 0){
-                    im_opt.importAs = ImportAsType.FOOTAGE;
-                }
-                if (importAsType.indexOf('COMP_CROPPED_LAYERS') > 0){
-                    im_opt.importAs = ImportAsType.COMP_CROPPED_LAYERS;
-                }
-                if (importAsType.indexOf('PROJECT') > 0){
-                    im_opt.importAs = ImportAsType.PROJECT;
-                }
-
-            }
-            if ('sequence' in import_options){
-                im_opt.sequence = true;
-            }
-
-            comp = app.project.importFile(im_opt);
-
-            if (app.project.selection.length == 2 &&
-                app.project.selection[0] instanceof FolderItem){
-                 comp.parentFolder = app.project.selection[0]
-            }
+            ret = app.project.importFiles(paths, suppressUI, targetBin, importAsNumberedStills);
         } catch (error) {
-            return _prepareError(error.toString() + importOptions.file.fsName);
+            return _prepareError(error.toString() + path);
         } finally {
             fp.close();
         }
     }else{
 	    return _prepareError("File " + path + " not found.");
     }
-    if (comp){
-        comp.name = item_name;
-        comp.label = 9; // Green
-        ret = {"name": comp.name, "id": comp.id}
-    }
-    app.endUndoGroup();
+
+    ret = {"name": item_name, "id": targetBin.nodeId}
 
     return JSON.stringify(ret);
+}
+
+function replaceItem(bin_id, paths, item_name, is_image_sequence){
+    /**
+     * Replaces loaded file with new file and updates name
+     *
+     * Args:
+     *    bin_id (int): nodeId of Bin, not a index!
+     *    paths (list[string]): absolute paths to new files
+     *    item_name (string): new composition name
+     *    is_image_sequence (bool): files loaded are numbered
+     *       file sequence
+     */
+
+    fp = new File(paths[0]);
+    if (!fp.exists){
+        return _prepareError("File " + path + " not found.");
+    }
+    var targetBin = getProjectItemById(bin_id);
+    if (targetBin){
+        var suppressUI = true;
+        var importAsNumberedStills = is_image_sequence;
+        try{
+            var child = targetBin.children[0];
+            if (child.canChangeMediaPath()){
+                var res = child.changeMediaPath(paths[0]);
+                child.refreshMedia();
+            }
+            targetBin.name = item_name;
+        } catch (error) {
+            return _prepareError(error.toString() + paths[0]);
+        } finally {
+            fp.close();
+        }
+    }else{
+        return _prepareError("There is no item with "+ bin_id);
+    }
+}
+
+function getProjectItemById(nodeId) {
+    var project = app.project;
+    var rootItem = project.rootItem;
+
+    // Helper function to search recursively in bins
+    function findInBin(bin, nodeId) {
+        for (var j = 0; j < bin.children.numItems; j++) {
+            var childItem = bin.children[j];
+
+            if (childItem.nodeId === nodeId) {
+                return childItem; // Found the item
+            }
+
+            // Recursively search in sub-bins
+            if (childItem.type === ProjectItemType.BIN) {
+                var foundChild = findInBin(childItem, nodeId);
+                if (foundChild) {
+                    return foundChild; // Return if found in sub-bins
+                }
+            }
+        }
+        return null; // Return null if not found
+    }
+
+
+    // Loop through all items in the project
+    for (var i = 0; i < rootItem.children.numItems; i++) {
+        var item = rootItem.children[i];
+
+        // Check if the item's nodeId matches the provided nodeId
+        if (item.nodeId === nodeId) {
+            return item; // Return the matching ProjectItem
+        }
+
+        // If the item is a bin, check its children recursively
+        if (item.type === ProjectItemType.BIN) {
+            var foundItem = findInBin(item, nodeId);
+            if (foundItem) {
+                return foundItem; // Return if found in sub-bins
+            }
+        }
+    }
+    return null; // Return null if no item is found
 }
 
 function setLabelColor(comp_id, color_idx){
@@ -350,42 +452,6 @@ function setLabelColor(comp_id, color_idx){
     }else{
         return _prepareError("There is no composition with "+ comp_id);
     }
-}
-
-function replaceItem(item_id, path, item_name){
-    /**
-     * Replaces loaded file with new file and updates name
-     *
-     * Args:
-     *    item_id (int): id of composition, not a index!
-     *    path (string): absolute path to new file
-     *    item_name (string): new composition name
-     */
-    app.beginUndoGroup("Replace File");
-
-    fp = new File(path);
-    if (!fp.exists){
-        return _prepareError("File " + path + " not found.");
-    }
-    var item = app.project.itemByID(item_id);
-    if (item){
-        try{
-            if (isFileSequence(item)) {
-                item.replaceWithSequence(fp, false);
-            }else{
-                item.replace(fp);
-            }
-
-            item.name = item_name;
-        } catch (error) {
-            return _prepareError(error.toString() + path);
-        } finally {
-            fp.close();
-        }
-    }else{
-        return _prepareError("There is no item with "+ item_id);
-    }
-    app.endUndoGroup();
 }
 
 function renameItem(item_id, new_name){
@@ -411,11 +477,11 @@ function deleteItem(item_id){
      *  Not restricted only to comp, it could delete
      *  any item with 'id'
      */
-    var item = app.project.itemByID(item_id);
-    if (item){
-        item.remove();
+    var item = getProjectItemById(item_id);
+    if (item && item.type === ProjectItemType.BIN){
+        item.deleteBin();
     }else{
-        return _prepareError("There is no composition with "+ comp_id);
+        return _prepareError("There is no item with "+ item_id);
     }
 }
 
@@ -924,7 +990,7 @@ function addPlaceholder(name, width, height, fps, duration){
 
         return _prepareSingleValue(item.id);
     }catch (error) {
-        writeLn(_prepareError("Cannot add placeholder " + error.toString()));
+        $.writeln(_prepareError("Cannot add placeholder " + error.toString()));
     }
     app.endUndoGroup();
 }
@@ -989,9 +1055,9 @@ function getMetadataSeq(){
 function createMetadataSeq(sequenceName){
     /**
      * Creates dummy sequence for storing AYON metadata
-     * 
+     *
      * It is not possible to store metadata directly on project itself
-     * 
+     *
      * This approach limits triggering sequence dialog for artist!
      */
     var project = app.project;
@@ -1001,7 +1067,7 @@ function createMetadataSeq(sequenceName){
 
     if ($.os.indexOf("Windows") !== -1) {
         presetPath = presetPath.replace(/\//g, "\\");
-    } 
+    }
 
     var newSequence = project.newSequence(sequenceName, presetPath);
     return newSequence
@@ -1013,3 +1079,9 @@ function _prepareSingleValue(value){
 function _prepareError(error_msg){
     return JSON.stringify({"error": error_msg})
 }
+
+//var items = replaceItem('000f4259', ['C:\\projects\\ayon_dev\\shot02\\publish\\render\\renderAe_animationMain\\v019\\ad_shot02_renderAe_animationMain_v019.1001.png', 'C:\\projects\\ayon_dev\\shot02\\publish\\render\\renderAe_animationMain\\v019\\ad_shot02_renderAe_animationMain_v019.1002.png', 'C:\\projects\\ayon_dev\\shot02\\publish\\render\\renderAe_animationMain\\v019\\ad_shot02_renderAe_animationMain_v019.1003.png'], 'new name1', false);
+
+// $.writeln(items);
+
+// deleteItem('000f424c');
