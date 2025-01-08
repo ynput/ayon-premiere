@@ -15,7 +15,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
     def execute(self):
         try:
             settings = self.data["project_settings"][self.host_name]
-            if not settings["hooks"]["InstallAyonExtensionToPremiere"]["enabled"]:
+            if not settings["hooks"]["InstallAyonExtensionToPremiere"][
+                "enabled"
+            ]:
                 return
             self.inner_execute(settings)
         except Exception:
@@ -29,12 +31,26 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
 
         addon_path = os.path.join(
             PREMIERE_ADDON_ROOT,
-            rf"api\extension.zxp",
+            r"api\extension.zxp",
+        )
+        target_path = os.path.join(
+            os.environ["appdata"], r"Adobe\CEP\extensions\io.ynput.PPRO.panel"
         )
 
-        with ZipFile(addon_path, "r") as zip:
-            zip.extractall(
-                path=r"C:\Users\Jack.P\AppData\Roaming\Adobe\CEP\extensions\io.ynput.PPRO.panel"
-            )
+        if os.path.exists(target_path):
+            self.log.info(f"Extension already exists at: {target_path}")
+            return
 
-        self.log.info("Successfully installed AYON extension")
+        try:
+            self.log.debug(f"Creating directory: {target_path}")
+            os.makedirs(target_path, exist_ok=True)
+
+            with ZipFile(addon_path, "r") as zip:
+                zip.extractall(path=target_path)
+
+            self.log.info("Successfully installed AYON extension")
+
+        except Exception as error:
+            self.log.warning(
+                f"Failed to install AYON extension due to: {error}"
+            )
