@@ -39,6 +39,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
 
         # Windows only for now.
         if not platform.system().lower() == "windows":
+            self.log.info("Non Windows platform. Cancelling..")
             return
 
         target_path = os.path.join(
