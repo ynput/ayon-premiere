@@ -195,23 +195,21 @@ def ls():
         print("Not connected yet, ignoring")
         return
 
-    layers_meta = stub.get_metadata()
-    for item in stub.get_items(comps=True,
-                               folders=True,
-                               footages=True):
-        data = stub.read(item, layers_meta)
-        # Skip non-tagged layers.
-        if not data:
+    project_metadata = stub.get_metadata()
+    for item in stub.get_items(bins=True, sequences=False, footages=False):
+        metadata = stub.get_item_metadata(item, project_metadata)
+        # Skip non AYON item.
+        if not metadata:
             continue
 
-        # Filter to only containers.
-        if "container" not in data["id"]:
+        is_loaded_container = "container" not in metadata["id"]
+        if is_loaded_container:
             continue
 
         # Append transient data
-        data["objectName"] = item.name.replace(stub.LOADED_ICON, '')
-        data["layer"] = item
-        yield data
+        metadata["objectName"] = item.name.replace(stub.LOADED_ICON, "")
+        metadata["bin"] = item
+        yield metadata
 
 
 def check_inventory():
@@ -229,12 +227,13 @@ def check_inventory():
     message_box.exec_()
 
 
-def containerise(name,
-                 namespace,
-                 comp,
-                 context,
-                 loader=None,
-                 suffix="_CON"):
+def containerise(
+    name,
+    namespace,
+    bin_item,
+    context,
+    loader=None
+):
     """
     Containerisation enables a tracking of version, author and origin
     for loaded assets.
@@ -246,10 +245,9 @@ def containerise(name,
     Arguments:
         name (str): Name of resulting assembly
         namespace (str): Namespace under which to host container
-        comp (AEItem): Composition to containerise
+        bin_item (PPROItem): Bin to containerise
         context (dict): Asset information
         loader (str, optional): Name of loader used to produce this container.
-        suffix (str, optional): Suffix of container, defaults to `_CON`.
 
     Returns:
         container (str): Name of container assembly
@@ -261,13 +259,13 @@ def containerise(name,
         "namespace": namespace,
         "loader": str(loader),
         "representation": context["representation"]["id"],
-        "members": comp.members or [comp.id]
+        "members": [bin_item.id]
     }
 
     stub = get_stub()
-    stub.imprint(comp.id, data)
+    stub.imprint(bin_item.id, data)
 
-    return comp
+    return bin_item
 
 
 def cache_and_get_instances(creator):

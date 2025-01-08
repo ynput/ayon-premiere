@@ -3,6 +3,8 @@ import re
 import json
 import contextlib
 import logging
+from collections import defaultdict
+
 import pyblish
 
 import ayon_api
@@ -34,27 +36,28 @@ def get_extension_manifest_path():
     )
 
 
-def get_unique_layer_name(layers, name):
-    """
-        Gets all layer names and if 'name' is present in them, increases
-        suffix by 1 (eg. creates unique layer name - for Loader)
+def get_unique_bin_name(bin_names, new_name):
+    """Gets all bin names and if 'name' is present in them, increases
+    suffix by 1 (eg. creates unique sequence name - for Loader)
+
     Args:
-        layers (list): of strings, names only
-        name (string):  checked value
+        bins (list[str]): of strings, names only
+        new_name (string):  checked value
 
     Returns:
         (string): name_00X (without version)
     """
-    names = {}
-    for layer in layers:
-        layer_name = re.sub(r'_\d{3}$', '', layer)
-        if layer_name in names.keys():
-            names[layer_name] = names[layer_name] + 1
-        else:
-            names[layer_name] = 1
-    occurrences = names.get(name, 0)
+    name_occurences = {}
+    for bin_name in bin_names:
+        name, _, ordinal_number = bin_name.rpartition('_')
+        name_occurences[name] = ordinal_number
+    occurrence = name_occurences.get(new_name, 0)
+    try:
+        occurrence = int(occurrence)
+    except TypeError:
+        occurrence = 0
 
-    return "{}_{:0>3d}".format(name, occurrences + 1)
+    return "{}_{:0>3d}".format(new_name, occurrence + 1)
 
 
 def get_background_layers(file_url):
