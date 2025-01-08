@@ -1,4 +1,5 @@
 import os
+import platform
 from zipfile import ZipFile
 
 from ayon_premiere import PREMIERE_ADDON_ROOT
@@ -21,7 +22,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
     def execute(self):
         try:
             settings = self.data["project_settings"][self.host_name]
-            if not settings["hooks"]["InstallAyonExtensionToPremiere"]["enabled"]:
+            if not settings["hooks"]["InstallAyonExtensionToPremiere"][
+                "enabled"
+            ]:
                 return
             self.inner_execute()
 
@@ -33,6 +36,10 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
 
     def inner_execute(self):
         self.log.info("Installing AYON Premiere extension.")
+
+        # Windows only for now.
+        if not platform.system().lower() == "windows":
+            return
 
         target_path = os.path.join(
             os.environ["appdata"], r"Adobe\CEP\extensions\io.ynput.PPRO.panel"
