@@ -5,9 +5,12 @@ from ayon_premiere.api.lib import get_unique_bin_name
 
 
 class FileLoader(api.PremiereLoader):
-    """Load images
+    """Load footage (images/movied) or audio files
 
+    Wraps loaded item into Bin (to be able to delete it if necessary)
     Stores the imported asset in a container named after the asset.
+
+    Metadata stored in dummy `AYON Metadata` Bin in Clip.Description field.
     """
     label = "Load file"
 
@@ -57,8 +60,8 @@ class FileLoader(api.PremiereLoader):
         # imported product with folder, eg. "chair_renderMain"
         namespace = f"{folder_name}_{name}"
         return api.containerise(
-            new_bin_name,  # "chair_renderMain_001"
-            namespace,
+            new_bin_name,  # "{stub.LOADED_ICON}chair_renderMain_001"
+            namespace,     # chair_renderMain
             import_element,
             context,
             self.__class__.__name__
@@ -68,6 +71,7 @@ class FileLoader(api.PremiereLoader):
         """ Switch asset or change version """
         stub = self.get_stub()
         stored_bin = container.pop("bin")
+        old_metadata = stub.get_item_metadata(stored_bin)
 
         folder_name = context["folder"]["name"]
         product_name = context["product"]["name"]
@@ -81,19 +85,25 @@ class FileLoader(api.PremiereLoader):
             new_bin_name = container["name"]
         paths = [get_representation_path(repre_entity)]
 
+        is_image_sequence = False
         if len(repre_entity["files"]) > 1:
+            is_image_sequence = True
             dir_path = os.path.dirname(paths[0])
             paths = [os.path.join(dir_path, repre_file["name"])
                      for repre_file in context["representation"]["files"]]
 
-        stub.replace_item(stored_bin.id, paths, new_bin_name)
+        paths = [path.replace("\\", "/") for path in paths]
+        new_bin = stub.replace_item(
+            stored_bin.id, paths, new_bin_name, is_image_sequence)
+
+        # new bin might be created
+        old_metadata["members"] = [new_bin.id]
+        old_metadata["representation"] = repre_entity["id"]
+        old_metadata["name"] = new_bin_name
+        old_metadata["namespace"] = new_container_name
         stub.imprint(
-            stored_bin.id,
-            {
-                "representation": repre_entity["id"],
-                "name": new_bin_name,
-                "namespace": new_container_name
-            }
+            new_bin.id,
+            old_metadata
         )
 
     def remove(self, container):

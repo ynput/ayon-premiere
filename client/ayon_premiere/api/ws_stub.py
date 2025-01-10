@@ -111,7 +111,7 @@ class PremiereServerStub():
                     item.id == item_meta.get("members")[0]:
                 return item_meta
 
-        self.log.debug("Couldn't find layer metadata")
+        self.log.debug("Couldn't find item metadata")
 
     def imprint(self, item_id, data, all_items=None, items_meta=None):
         """
@@ -292,22 +292,27 @@ class PremiereServerStub():
         if records:
             return records.pop()
 
-    def replace_item(self, item_id, paths, item_name):
+    def replace_item(self, item_id, paths, item_name, is_image_sequence):
         """ Replace FootageItem with new file
 
             Args:
                 item_id (int):
                 paths (string[str]):absolute path
                 item_name (string): label on item in Project list
+                is_image_sequence (bool): if should be loaded as image seq
 
         """
-        res = self.websocketserver.call(self.client.call
-                                        ("Premiere.replace_item",
-                                         item_id=item_id,
-                                         paths=paths,
-                                         item_name=item_name))
+        res = self.websocketserver.call(self.client.call(
+            "Premiere.replace_item",
+            item_id=item_id,
+            paths=paths,
+            item_name=item_name,
+            is_image_sequence=is_image_sequence
+        ))
 
-        return self._handle_return(res)
+        records = self._to_records(self._handle_return(res))
+        if records:
+            return records.pop()
 
     def rename_item(self, item_id, item_name):
         """ Replace item with item_name
