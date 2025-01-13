@@ -21,11 +21,11 @@ from .pipeline import (
 #     set_settings
 # )
 #
-# from .plugin import (
-#     PremiereLoader
-# )
-#
-#
+from .plugin import (
+    PremiereLoader
+)
+
+
 __all__ = [
     # ws_stub
     "get_stub",
@@ -42,5 +42,5 @@ __all__ = [
     # "set_settings",
     #
     # # plugin
-    # "PremiereLoader"
+    "PremiereLoader"
 ]

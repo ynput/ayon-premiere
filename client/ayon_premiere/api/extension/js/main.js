@@ -121,8 +121,8 @@ function main(websocket_url){
 
     RPC.addRoute('Premiere.get_items', function (data) {
         log.warn('Server called client route "get_items":', data);
-        return runEvalScript("getItems("  + data.comps + "," +
-                                            data.folders + "," +
+        return runEvalScript("getItems("  + data.bins + "," +
+                                            data.sequences + "," +
                                             data.footages + ")")
             .then(function(result){
                 log.warn("get_items: " + result);
@@ -146,18 +146,17 @@ function main(websocket_url){
                                                    data.folders + "," +
                                                    data.footages  + ")")
             .then(function(result){
-                log.warn("get_items: " + result);
+                log.warn("get_selected_items: " + result);
                 return result;
             });
     });
 
-    RPC.addRoute('Premiere.import_file', function (data) {
-        log.warn('Server called client route "import_file":', data);
-        var escapedPath = EscapeStringForJSX(data.path);
-        return runEvalScript("importFile('" + escapedPath +"', " +
+    RPC.addRoute('Premiere.import_files', function (data) {
+        log.warn('Server called client route "import_files":', data);
+        var escapedPaths = data.paths.map(path => EscapeStringForJSX(path));
+        return runEvalScript("importFiles(" + JSON.stringify(escapedPaths) + ", " +
                                          "'" + data.item_name + "'," +
-                                         "'" + JSON.stringify(
-                                         data.import_options) + "')")
+                                         data.is_image_sequence + ")")
             .then(function(result){
                 log.warn("importFile: " + result);
                 return result;
@@ -166,10 +165,11 @@ function main(websocket_url){
 
     RPC.addRoute('Premiere.replace_item', function (data) {
         log.warn('Server called client route "replace_item":', data);
-        var escapedPath = EscapeStringForJSX(data.path);
-        return runEvalScript("replaceItem(" + data.item_id + ", " +
-                                     "'" + escapedPath + "', " +
-                                     "'" + data.item_name + "')")
+        var escapedPaths = data.paths.map(path => EscapeStringForJSX(path));
+        return runEvalScript("replaceItem('" + data.item_id + "', " +
+                                          JSON.stringify(escapedPaths) + ", " +
+                                          "'" + data.item_name + "'," +
+                                          data.is_image_sequence + ")")
             .then(function(result){
                 log.warn("replaceItem: " + result);
                 return result;
@@ -188,7 +188,7 @@ function main(websocket_url){
 
     RPC.addRoute('Premiere.delete_item', function (data) {
         log.warn('Server called client route "delete_item":', data);
-        return runEvalScript("deleteItem(" + data.item_id + ")")
+        return runEvalScript("deleteItem('" + data.item_id + "')")
             .then(function(result){
                 log.warn("deleteItem: " + result);
                 return result;
@@ -211,29 +211,6 @@ function main(websocket_url){
                                                 data.color_idx + ")")
             .then(function(result){
                 log.warn("imprint: " + result);
-                return result;
-            });
-    });
-
-    RPC.addRoute('Premiere.get_comp_properties', function (data) {
-        log.warn('Server called client route "get_comp_properties":', data);
-        return runEvalScript("getCompProperties(" + data.item_id + ")")
-            .then(function(result){
-                log.warn("get_comp_properties: " + result);
-                return result;
-            });
-    });
-
-    RPC.addRoute('Premiere.set_comp_properties', function (data) {
-        log.warn('Server called client route "set_work_area":', data);
-        return runEvalScript("setCompProperties(" + data.item_id + ',' +
-                                              data.start + ',' +
-                                              data.duration + ',' +
-                                              data.frame_rate + ',' +
-                                              data.width + ',' +
-                                              data.height + ")")
-            .then(function(result){
-                log.warn("set_comp_properties: " + result);
                 return result;
             });
     });
@@ -265,68 +242,6 @@ function main(websocket_url){
                 log.warn("get_render_info: " + result);
                 return result;
             });
-    });
-
-    RPC.addRoute('Premiere.get_audio_url', function (data) {
-        log.warn('Server called client route "get_audio_url":', data);
-        return runEvalScript("getAudioUrlForComp(" + data.item_id + ")")
-            .then(function(result){
-                log.warn("getAudioUrlForComp: " + result);
-                return result;
-            });
-    });
-
-    RPC.addRoute('Premiere.import_background', function (data) {
-        log.warn('Server called client route "import_background":', data);
-        return runEvalScript("importBackground(" + data.comp_id + ", " +
-                                               "'" + data.comp_name + "', " +
-                                               JSON.stringify(data.files) + ")")
-            .then(function(result){
-                log.warn("importBackground: " + result);
-                return result;
-            });
-    });
-
-    RPC.addRoute('Premiere.reload_background', function (data) {
-        log.warn('Server called client route "reload_background":', data);
-        return runEvalScript("reloadBackground(" + data.comp_id + ", " +
-                                               "'" + data.comp_name + "', " +
-                                               JSON.stringify(data.files) + ")")
-            .then(function(result){
-                log.warn("reloadBackground: " + result);
-                return result;
-            });
-    });
-
-   RPC.addRoute('Premiere.add_item_as_layer', function (data) {
-       log.warn('Server called client route "add_item_as_layer":', data);
-       return runEvalScript("addItemAsLayerToComp(" + data.comp_id + ", " +
-                                                      data.item_id + "," +
-                                                  " null )")
-           .then(function(result){
-               log.warn("addItemAsLayerToComp: " + result);
-               return result;
-           });
-   });
-
-   RPC.addRoute('Premiere.add_item_instead_placeholder', function (data) {
-    log.warn('Server called client route "add_item_instead_placeholder":', data);
-    return runEvalScript("addItemInstead(" + data.placeholder_item_id + ", " +
-                                             data.item_id + ")")
-        .then(function(result){
-            log.warn("add_item_instead_placeholder: " + result);
-            return result;
-        });
-});
-
-   RPC.addRoute('Premiere.render', function (data) {
-    log.warn('Server called client route "render":', data);
-    var escapedPath = EscapeStringForJSX(data.folder_url);
-    return runEvalScript("render('" + escapedPath +"', " + data.comp_id + ")")
-        .then(function(result){
-            log.warn("render: " + result);
-            return result;
-        });
     });
 
     RPC.addRoute('Premiere.get_extension_version', function (data) {
