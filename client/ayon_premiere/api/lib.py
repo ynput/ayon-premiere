@@ -1,9 +1,7 @@
 import os
-import re
 import json
 import contextlib
 import logging
-from collections import defaultdict
 
 import pyblish
 
