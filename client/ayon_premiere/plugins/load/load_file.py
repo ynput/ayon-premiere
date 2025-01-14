@@ -1,7 +1,11 @@
 import os
+
 from ayon_core.pipeline import get_representation_path
+from ayon_core.pipeline.load import LoadError
+
 from ayon_premiere import api
 from ayon_premiere.api.lib import get_unique_bin_name
+
 
 
 class FileLoader(api.PremiereLoader):
@@ -32,9 +36,8 @@ class FileLoader(api.PremiereLoader):
 
         path = self.filepath_from_context(context)
         if not path or not os.path.exists(path):
-            self.log.warning(
+            raise LoadError(
                 f"Representation id `{repr_id}` has invalid path `{path}`")
-            return
 
         paths = [path]
 
@@ -50,10 +53,9 @@ class FileLoader(api.PremiereLoader):
         import_element = stub.import_files(paths, new_bin_name, image_sequence)
 
         if not import_element:
-            self.log.warning(
-                f"Representation id `{repr_id}` failed to load.")
-            self.log.warning("Check host app for alert error.")
-            return
+            msg = (f"Representation id `{repr_id}` failed to load."
+                    "Check host app for alert error.")
+            raise LoadError(msg)
 
         self[:] = [import_element]
         folder_name = context["folder"]["name"]
