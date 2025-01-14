@@ -17,6 +17,7 @@ class FileLoader(api.PremiereLoader):
     Metadata stored in dummy `AYON Metadata` Bin in Clip.Description field.
     """
     label = "Load file"
+    icon = "image"
 
     product_types = {
         "image",
