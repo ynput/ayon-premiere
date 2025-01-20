@@ -4,8 +4,8 @@
 """
 import json
 import logging
-
-import attr
+from dataclasses import dataclass, field
+from typing import List
 
 from wsrpc_aiohttp import WebSocketAsync
 
@@ -17,7 +17,7 @@ class ConnectionNotEstablishedYet(Exception):
 
 # TODO still contains unneeded/uniplemented code inherited from AE impl
 
-@attr.s
+@dataclass
 class PPROItem(object):
     """
         Object denoting Item in PPRO. Each item is created in PPRO by any
@@ -25,8 +25,9 @@ class PPROItem(object):
         later processing.
     """
     # metadata
-    id = attr.ib()  # id created by PPRO, could be used for querying
-    name = attr.ib()  # name of item
+    id: str = field()
+    name: str = field()
+    members: List[str] = field(default_factory=list)
 
 
 class PremiereServerStub():
@@ -36,8 +37,8 @@ class PremiereServerStub():
         is opened).
         'self.websocketserver.call' is used as async wrapper
     """
-    PUBLISH_ICON = '\u2117 '
-    LOADED_ICON = '\u25bc'
+    PUBLISH_ICON = "\u2117 "
+    LOADED_ICON = "\u25bc"
 
     def __init__(self):
         self.websocketserver = WebServerTool.get_instance()
@@ -67,7 +68,7 @@ class PremiereServerStub():
         Returns: None
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.open', path=path))
+                                        ("Premiere.open", path=path))
 
         return self._handle_return(res)
 
@@ -83,31 +84,34 @@ class PremiereServerStub():
             (list)
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_metadata'))
+                                        ("Premiere.get_metadata"))
         metadata = self._handle_return(res)
 
         return metadata or []
 
-    def read(self, item, layers_meta=None):
+    def get_item_metadata(self, item, project_metadata=None):
         """
-            Parses item metadata from Label field of active document.
-            Used as filter to pick metadata for specific 'item' only.
+            Parses item metadata from dummy `AYON Metadata` Bin of active
+            document.
+            Used as filter to pick metadata for specific 'item' only as
+            metadata are stored as a list in all DCCs.
 
         Args:
             item (PPROItem): pulled info from PPRO
-            layers_meta (dict): full list from Headline
+            project_metadata (dict): full stored metadata for AYON container or
+                instances
                 (load and inject for better performance in loops)
         Returns:
             (dict):
         """
-        if layers_meta is None:
-            layers_meta = self.get_metadata()
-        for item_meta in layers_meta:
-            if 'container' in item_meta.get('id') and \
-                    str(item.id) == str(item_meta.get('members')[0]):
+        if project_metadata is None:
+            project_metadata = self.get_metadata()
+        for item_meta in project_metadata:
+            if "container" in item_meta.get("id") and \
+                    item.id == item_meta.get("members")[0]:
                 return item_meta
 
-        self.log.debug("Couldn't find layer metadata")
+        self.log.debug("Couldn't find item metadata")
 
     def imprint(self, item_id, data, all_items=None, items_meta=None):
         """
@@ -131,8 +135,8 @@ class PremiereServerStub():
         is_new = True
 
         for item_meta in items_meta:
-            if ((item_meta.get('members') and
-                    str(item_id) == str(item_meta.get('members')[0])) or
+            if ((item_meta.get("members") and
+                    str(item_id) == str(item_meta.get("members")[0])) or
                     item_meta.get("instance_id") == item_id):
                 is_new = False
                 if data:
@@ -147,15 +151,14 @@ class PremiereServerStub():
         # Ensure only valid ids are stored.
         if not all_items:
             # loaders create FootageItem now
-            all_items = self.get_items(comps=True,
-                                       folders=True,
-                                       footages=True)
-        item_ids = [int(item.id) for item in all_items]
+            all_items = self.get_items(
+                bins=True, sequences=True, footages=True)
+        item_ids = [item.id for item in all_items]
         cleaned_data = []
         for meta in result_meta:
             # do not added instance with nonexistend item id
             if meta.get("members"):
-                if int(meta["members"][0]) not in item_ids:
+                if meta["members"][0] not in item_ids:
                     continue
 
             cleaned_data.append(meta)
@@ -163,7 +166,7 @@ class PremiereServerStub():
         payload = json.dumps(cleaned_data, indent=4)
 
         res = self.websocketserver.call(
-            self.client.call('Premiere.imprint', payload=payload)
+            self.client.call("Premiere.imprint", payload=payload)
         )
         return self._handle_return(res)
 
@@ -173,7 +176,7 @@ class PremiereServerStub():
         Returns(string): file name
         """
         res = self.websocketserver.call(self.client.call(
-            'Premiere.get_active_document_full_name'))
+            "Premiere.get_active_document_full_name"))
 
         return self._handle_return(res)
 
@@ -183,31 +186,29 @@ class PremiereServerStub():
         Returns(string): file name
         """
         res = self.websocketserver.call(self.client.call(
-            'Premiere.get_active_document_name'))
+            "Premiere.get_active_document_name"))
 
         return self._handle_return(res)
 
-    def get_items(self, comps, folders=False, footages=False):
+    def get_items(self, bins, sequences=False, footages=False):
         """
             Get all items from Project panel according to arguments.
             There are multiple different types:
-                CompItem (could have multiple layers - source for Creator,
-                    will be rendered)
-                FolderItem (collection type, currently used for Background
-                    loading)
-                FootageItem (imported file - created by Loader)
+                Bin - wrappers for multiple footage (image/movies)
+                Sequences - publishable set of tracks made from footages
+                Footage - imported files
         Args:
-            comps (bool): return CompItems
-            folders (bool): return FolderItem
-            footages (bool: return FootageItem
+            bins (bool): return Bin
+            sequences (bool): return Sequences
+            footages (bool: return Footage
 
         Returns:
             (list) of namedtuples
         """
         res = self.websocketserver.call(
-            self.client.call('Premiere.get_items',
-                             comps=comps,
-                             folders=folders,
+            self.client.call("Premiere.get_items",
+                             bins=bins,
+                             sequences=sequences,
                              footages=footages)
               )
         return self._to_records(self._handle_return(res))
@@ -219,15 +220,15 @@ class PremiereServerStub():
             items (list): of int item ids
         """
         self.websocketserver.call(
-            self.client.call('Premiere.select_items', items=items))
+            self.client.call("Premiere.select_items", items=items))
 
 
-    def get_selected_items(self, comps, folders=False, footages=False):
+    def get_selected_items(self, sequences, bins=False, footages=False):
         """
             Same as get_items but using selected items only
         Args:
-            comps (bool): return CompItems
-            folders (bool): return FolderItem
+            sequences (bool): return CompItems
+            bins (bool): return Bin
             footages (bool: return FootageItem
 
         Returns:
@@ -235,9 +236,9 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_selected_items',
-                                         comps=comps,
-                                         folders=folders,
+                                        ("Premiere.get_selected_items",
+                                         comps=sequences,
+                                         folders=bins,
                                          footages=footages)
                                         )
         return self._to_records(self._handle_return(res))
@@ -251,7 +252,7 @@ class PremiereServerStub():
                 item_type (str): COMP|FOLDER
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.add_item',
+                                        ("Premiere.add_item",
                                          name=name,
                                          item_type=item_type))
 
@@ -264,47 +265,54 @@ class PremiereServerStub():
             Args:
                 item_id (int, or string)
         """
-        for item in self.get_items(True, True, True):
+        for item in self.get_items(bins=True, sequences=False, footages=False):
             if str(item.id) == str(item_id):
                 return item
 
         return None
 
-    def import_file(self, path, item_name, import_options=None):
+    def import_files(self, paths, item_name, is_image_sequence=False):
         """
-            Imports file as a FootageItem. Used in Loader
+            Imports file(s) into Bin. Used in Loader
         Args:
-            path (string): absolute path for asset file
-            item_name (string): label for created FootageItem
-            import_options (dict): different files (img vs psd) need different
-                config
+            paths (list[str]): absolute path for asset files
+            item_name (string): label for created Bin
+            is_image_sequence (bool): if loaded item is image sequence
 
         """
         res = self.websocketserver.call(
-            self.client.call('Premiere.import_file',
-                             path=path,
-                             item_name=item_name,
-                             import_options=import_options)
+            self.client.call(
+                "Premiere.import_files",
+                paths=paths,
+                item_name=item_name,
+                is_image_sequence=is_image_sequence
             )
+        )
         records = self._to_records(self._handle_return(res))
         if records:
             return records.pop()
 
-    def replace_item(self, item_id, path, item_name):
+    def replace_item(self, item_id, paths, item_name, is_image_sequence):
         """ Replace FootageItem with new file
 
             Args:
                 item_id (int):
-                path (string):absolute path
+                paths (string[str]):absolute path
                 item_name (string): label on item in Project list
+                is_image_sequence (bool): if should be loaded as image seq
 
         """
-        res = self.websocketserver.call(self.client.call
-                                        ('Premiere.replace_item',
-                                         item_id=item_id,
-                                         path=path, item_name=item_name))
+        res = self.websocketserver.call(self.client.call(
+            "Premiere.replace_item",
+            item_id=item_id,
+            paths=paths,
+            item_name=item_name,
+            is_image_sequence=is_image_sequence
+        ))
 
-        return self._handle_return(res)
+        records = self._to_records(self._handle_return(res))
+        if records:
+            return records.pop()
 
     def rename_item(self, item_id, item_name):
         """ Replace item with item_name
@@ -315,7 +323,7 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.rename_item',
+                                        ("Premiere.rename_item",
                                          item_id=item_id,
                                          item_name=item_name))
 
@@ -328,7 +336,7 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.delete_item',
+                                        ("Premiere.delete_item",
                                          item_id=item_id))
 
         return self._handle_return(res)
@@ -355,7 +363,7 @@ class PremiereServerStub():
 
         payload = json.dumps(cleaned_data, indent=4)
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.imprint',
+                                        ("Premiere.imprint",
                                          payload=payload))
 
         return self._handle_return(res)
@@ -373,7 +381,7 @@ class PremiereServerStub():
             color_idx (int): 0-16 Label colors from PPRO Project view
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.set_label_color',
+                                        ("Premiere.set_label_color",
                                          item_id=item_id,
                                          color_idx=color_idx))
 
@@ -392,7 +400,7 @@ class PremiereServerStub():
 
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_comp_properties',
+                                        ("Premiere.get_comp_properties",
                                          item_id=comp_id
                                          ))
 
@@ -416,7 +424,7 @@ class PremiereServerStub():
             height (int): resolution height
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.set_comp_properties',
+                                        ("Premiere.set_comp_properties",
                                          item_id=comp_id,
                                          start=start,
                                          duration=duration,
@@ -431,7 +439,7 @@ class PremiereServerStub():
         Returns: None
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.save'))
+                                        ("Premiere.save"))
 
         return self._handle_return(res)
 
@@ -444,7 +452,7 @@ class PremiereServerStub():
         Returns: None
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.saveAs',
+                                        ("Premiere.saveAs",
                                          image_path=project_path,
                                          as_copy=as_copy))
 
@@ -457,7 +465,7 @@ class PremiereServerStub():
                (list) of (PPROItem): with 'file_name' field
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_render_info',
+                                        ("Premiere.get_render_info",
                                          comp_id=comp_id))
 
         records = self._to_records(self._handle_return(res))
@@ -472,7 +480,7 @@ class PremiereServerStub():
                 (str): absolute path url
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.get_audio_url',
+                                        ("Premiere.get_audio_url",
                                          item_id=item_id))
 
         return self._handle_return(res)
@@ -500,7 +508,7 @@ class PremiereServerStub():
                 (PPROItem): object with id of created folder, all imported images
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.import_background',
+                                        ("Premiere.import_background",
                                          comp_id=comp_id,
                                          comp_name=comp_name,
                                          files=files))
@@ -526,7 +534,7 @@ class PremiereServerStub():
                 (PPROItem): object with id of created folder, all imported images
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.reload_background',
+                                        ("Premiere.reload_background",
                                          comp_id=comp_id,
                                          comp_name=comp_name,
                                          files=files))
@@ -546,7 +554,7 @@ class PremiereServerStub():
                 comp already found previously
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.add_item_as_layer',
+                                        ("Premiere.add_item_as_layer",
                                          comp_id=comp_id,
                                          item_id=item_id))
 
@@ -565,7 +573,7 @@ class PremiereServerStub():
                 item_id (int): loaded FootageItem id
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.add_item_instead_placeholder',  # noqa
+                                        ("Premiere.add_item_instead_placeholder",  # noqa
                                          placeholder_item_id=placeholder_item_id,  # noqa
                                          item_id=item_id))
 
@@ -586,7 +594,7 @@ class PremiereServerStub():
                 duration (int)
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.add_placeholder',
+                                        ("Premiere.add_placeholder",
                                          name=name,
                                          width=width,
                                          height=height,
@@ -603,7 +611,7 @@ class PremiereServerStub():
         Returns: None
         """
         res = self.websocketserver.call(self.client.call
-                                        ('Premiere.render',
+                                        ("Premiere.render",
                                          folder_url=folder_url,
                                          comp_id=comp_id))
         return self._handle_return(res)
@@ -611,26 +619,26 @@ class PremiereServerStub():
     def get_extension_version(self):
         """Returns version number of installed extension."""
         res = self.websocketserver.call(self.client.call(
-            'Premiere.get_extension_version'))
+            "Premiere.get_extension_version"))
 
         return self._handle_return(res)
 
     def get_app_version(self):
         """Returns version number of installed application (17.5...)."""
         res = self.websocketserver.call(self.client.call(
-            'Premiere.get_app_version'))
+            "Premiere.get_app_version"))
 
         return self._handle_return(res)
 
     def close(self):
-        res = self.websocketserver.call(self.client.call('Premiere.close'))
+        res = self.websocketserver.call(self.client.call("Premiere.close"))
 
         return self._handle_return(res)
 
     def print_msg(self, msg):
         """Triggers Javascript alert dialog."""
         self.websocketserver.call(self.client.call
-                                  ('Premiere.print_msg',
+                                  ("Premiere.print_msg",
                                    msg=msg))
 
     def _handle_return(self, res):
@@ -684,21 +692,21 @@ class PremiereServerStub():
                 continue
             # currently implemented and expected fields
             item = PPROItem(
-                d.get('id'),
-                d.get('name'),
-                d.get('type'),
-                d.get('members'),
-                d.get('frameStart'),
-                d.get('framesDuration'),
-                d.get('frameRate'),
-                d.get('file_name'),
-                d.get("instance_id"),
-                d.get("width"),
-                d.get("height"),
-                d.get("is_placeholder"),
-                d.get("uuid"),
-                d.get("path"),
-                d.get("containing_comps"),
+                d.get("id"),
+                d.get("name"),
+                # d.get("type"),
+                d.get("members"),
+                # d.get("frameStart"),
+                # d.get("framesDuration"),
+                # d.get("frameRate"),
+                # d.get("file_name"),
+                # d.get("instance_id"),
+                # d.get("width"),
+                # d.get("height"),
+                # d.get("is_placeholder"),
+                # d.get("uuid"),
+                # d.get("path"),
+                # d.get("containing_comps"),
             )
 
             ret.append(item)

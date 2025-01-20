@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ExtensionManifest Version="6.0"
 				   ExtensionBundleId="io.ynput.PPRO.panel"
-				   ExtensionBundleVersion="1.0"
-				   ExtensionBundleName="AYON Premiere"
+				   ExtensionBundleVersion="1.1.1"
+				   ExtensionBundleName="io.ynput.PPRO.panel"
 				   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<ExtensionList>
 		<Extension Id="io.ynput.PPRO.panel" Version="1.0.0" />
