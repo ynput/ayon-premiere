@@ -54,10 +54,11 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             r"api\extension.zxp",
         )
 
-        # Extension already installed, compare the versions to see if we need to replace
+        # Extension already installed, compare the versions
         if os.path.exists(target_path):
             self.log.info(
-                f"The extension already exists at: {target_path}. Comparing versions.."
+                f"The extension already exists at: {target_path}. "
+                f"Comparing versions.."
             )
             if not self._compare_extension_versions(
                 target_path, extension_path
@@ -85,7 +86,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
         self, target_path: str, extension_path: str
     ) -> bool:
         try:
-            # opens the existing extension manifest to get the Version attribute.
+            # opens the existing extension manifest to get the Version attr
             with open(f"{target_path}/CSXS/manifest.xml", "rb") as xml_file:
                 installed_version = (
                     ET.parse(xml_file)
@@ -98,7 +99,8 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
 
             if not installed_version:
                 self.log.warning(
-                    "Unable to resolve the currently installed extension version. Cancelling.."
+                    "Unable to resolve the currently installed extension "
+                    "version. Cancelling.."
                 )
                 return False
 
@@ -112,7 +114,8 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
                 )
                 if not new_version:
                     self.log.warning(
-                        "Unable to resolve the new extension version. Cancelling.."
+                        "Unable to resolve the new extension version. "
+                        "Cancelling.."
                     )
                 self.log.debug(f"New extension version found: {new_version}")
 
@@ -123,7 +126,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
                     self.log.info("Versions matched. Cancelling..")
                     return False
 
-                # remove the existing addon to prevent any side effects when unzipping later.
+                # remove the existing addon
                 self.log.info(
                     "Version mismatch found. Removing old extensions.."
                 )
@@ -132,7 +135,8 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
 
         except PermissionError as error:
             self.log.warning(
-                f"Permissions error has occured while comparing versions: {error}"
+                "Permissions error has occurred while comparing "
+                f"versions: {error}"
             )
             return False
 
