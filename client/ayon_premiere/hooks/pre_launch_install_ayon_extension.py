@@ -77,7 +77,6 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
         except Exception as error:
             self.log.warning(f"An unexpected error occured: {error}")
 
-
     def _should_deploy_extension(
             self, extension_path: str, target_path:str) -> bool:
         """Check if current extension version is installed, purge old one."""
