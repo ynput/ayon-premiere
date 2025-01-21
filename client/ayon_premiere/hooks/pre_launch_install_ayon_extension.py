@@ -54,7 +54,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
         )
 
         try:
-            deploy = self._deploy_extension(extension_path, target_path)
+            deploy = self._should_deploy_extension(extension_path, target_path)
 
             if not deploy:
                 self.log.debug(f"Extension already deployed at {target_path}.")
@@ -78,8 +78,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             self.log.warning(f"An unexpected error occured: {error}")
 
 
-    def _deploy_extension(self, extension_path, target_path):
-        """Check if current extension version is installed, purge old ones."""
+    def _should_deploy_extension(
+            self, extension_path: str, target_path:str) -> bool:
+        """Check if current extension version is installed, purge old one."""
         with ZipFile(extension_path, 'r') as zip_file:
             with zip_file.open('CSXS/manifest.xml') as manifest_file:
                 content = manifest_file.read()
