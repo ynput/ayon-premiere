@@ -13,7 +13,9 @@ class HooksModel(BaseSettingsModel):
 
 
 class PremiereSettings(BaseSettingsModel):
-    hooks: HooksModel = SettingsField(default_factory=HooksModel, title="Hooks")
+    hooks: HooksModel = SettingsField(
+        default_factory=HooksModel, title="Hooks"
+    )
 
 
 DEFAULT_VALUES = {
