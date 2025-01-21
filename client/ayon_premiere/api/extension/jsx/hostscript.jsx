@@ -381,11 +381,10 @@ function replaceItem(bin_id, paths, item_name, isImageSequence){
                 // Loop through clips in the track
                 for (var k = 0; k < track.clips.numItems; k++) {
                     var clip = track.clips[k];
-                    if (clip.projectItem.id === oldItem.id) {
+                    if (clip.projectItem.nodeId === oldItem.nodeId) {
                         // Replace the project item with the new item
                         clip.projectItem = newItem;
 
-                        // Optionally, update the clip name or other properties if needed
                         clip.name = newItem.name;
                     }
                 }
