@@ -1,6 +1,9 @@
 import os
 import platform
 from zipfile import ZipFile
+import xml.etree.ElementTree as ET
+from shutil import rmtree
+
 
 from ayon_premiere import PREMIERE_ADDON_ROOT
 from ayon_applications import PreLaunchHook, LaunchTypes
@@ -22,7 +25,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
     def execute(self):
         try:
             settings = self.data["project_settings"][self.host_name]
-            if not settings["hooks"]["InstallAyonExtensionToPremiere"]["enabled"]:
+            if not settings["hooks"]["InstallAyonExtensionToPremiere"][
+                "enabled"
+            ]:
                 return
             self.inner_execute()
 
@@ -54,7 +59,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             self.log.info(
                 f"The extension already exists at: {target_path}. Comparing versions.."
             )
-            if not self._compare_extension_versions(target_path, extension_path):
+            if not self._compare_extension_versions(
+                target_path, extension_path
+            ):
                 return
 
         try:
@@ -78,15 +85,16 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
         self, target_path: str, extension_path: str
     ) -> bool:
         try:
-            import xml.etree.ElementTree as ET
-            from shutil import rmtree
-
             # opens the existing extension manifest to get the Version attribute.
             with open(f"{target_path}/CSXS/manifest.xml", "rb") as xml_file:
                 installed_version = (
-                    ET.parse(xml_file).find("*/Extension").attrib.get("Version")
+                    ET.parse(xml_file)
+                    .find("*/Extension")
+                    .attrib.get("Version")
                 )
-            self.log.debug(f"Current extension version found: {installed_version}")
+            self.log.debug(
+                f"Current extension version found: {installed_version}"
+            )
 
             if not installed_version:
                 self.log.warning(
@@ -98,7 +106,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             with ZipFile(extension_path, "r") as archive:
                 xml_file = archive.open("CSXS/manifest.xml")
                 new_version = (
-                    ET.parse(xml_file).find("*/Extension").attrib.get("Version")
+                    ET.parse(xml_file)
+                    .find("*/Extension")
+                    .attrib.get("Version")
                 )
                 if not new_version:
                     self.log.warning(
@@ -106,14 +116,17 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
                     )
                 self.log.debug(f"New extension version found: {new_version}")
 
-                # compare the two versions, a simple == is enough since the we don't care if the
-                # version increments or decrements, if they match nothing happens.
+                # compare the two versions, a simple == is enough since
+                # we don't care if the version increments or decrements
+                # if they match nothing happens.
                 if installed_version == new_version:
                     self.log.info("Versions matched. Cancelling..")
                     return False
 
                 # remove the existing addon to prevent any side effects when unzipping later.
-                self.log.info("Version mismatch found. Removing old extensions..")
+                self.log.info(
+                    "Version mismatch found. Removing old extensions.."
+                )
                 rmtree(target_path)
                 return True
 
@@ -124,7 +137,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             return False
 
         except OSError as error:
-            self.log.warning(f"OS error has occured while comparing versions: {error}")
+            self.log.warning(
+                f"OS error has occured while comparing versions: {error}"
+            )
             return False
 
         except Exception as error:
