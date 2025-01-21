@@ -7,6 +7,8 @@ indent: 4, maxerr: 50 */
 
 //app.preferences.savePrefAsBool("General Section", "Show Welcome Screen", false) ;  // ntwrk in PPRO
 
+if (typeof $ == "undefined") $ = {};
+
 if(!Array.prototype.indexOf) {
     Array.prototype.indexOf = function ( item ) {
         var index = 0, length = this.length;
@@ -148,8 +150,11 @@ function getItems(bins, sequences, footages){
       var item = rootFolder.children[i];
 
       if (item.type === ProjectItemType.BIN) { // bin
-        walkBins(item, bins, sequences, footages);
-      } else if (item.type === 1 && footages && item.getMediaPath()) {
+        if (bins){
+            projectItems.push(prepareItemMetadata(item));
+          }
+        projectItems = walkBins(item, bins, sequences, footages, projectItems);
+      } else if (item.type === ProjectItemType.CLIP && footages && item.getMediaPath()) {
         projectItems.push(prepareItemMetadata(item));
       }
     }
@@ -157,7 +162,7 @@ function getItems(bins, sequences, footages){
     function prepareItemMetadata(item){
         var item_type = '';
         var path = '';
-        if (item.type == 1){
+        if (item.type == ProjectItemType.CLIP){
             item_type = "footage";
             path = item.getMediaPath();
         }else if (item.type === ProjectItemType.BIN){
@@ -174,30 +179,33 @@ function getItems(bins, sequences, footages){
     }
 
     // walk through bins recursively
-    function walkBins (bin, bins, sequences, footages) { // eslint-disable-line no-unused-vars
+    function walkBins (bin, bins, sequences, footages, projectItems) { // eslint-disable-line no-unused-vars
 
-      if (bins){
-        projectItems.push(prepareItemMetadata(bin));
-      }
       for (var i = 0; i < bin.children.numItems; i++) {
         var object = bin.children[i];
         // $.writeln(bin.name + ' has ' + object + ' ' + object.name  + ' of type ' +  object.type + ' and has mediapath ' + object.getMediaPath() );
         if (object.type === ProjectItemType.BIN) { // bin
           // $.writeln(object.name  + ' has ' +  object.children.numItems  );
+          if (bins){
+            projectItems.push(prepareItemMetadata(object));
+          }
           for (var j = 0; j < object.children.numItems; j++) {
-            var obj = object.children[j];
-            if (obj.type === 1 && obj.getMediaPath()) { // clip  in sub bin
+            var item = object.children[j];
+            if (footages && item.type === ProjectItemType.CLIP &&
+                item.getMediaPath()) { // clip  in sub bin
               // $.writeln(object.name  + ' has ' + obj + ' ' +  obj.name  );
-              projectItems.push(obj);
-            } else if (obj.type === ProjectItemType.BIN) { // bin
-              walkBins(obj);
+              projectItems.push(prepareItemMetadata(item));
+            } else if (item.type === ProjectItemType.BIN) { // bin
+                return walkBins(item, bins, sequences, footages, projectItems);
             }
           }
-        } else if (object.type === 1 && footages && object.getMediaPath()) { // clip in bin in root
+        } else if (footages && object.type === ProjectItemType.CLIP &&
+                   object.getMediaPath()) { // clip in bin in root
           // $.pype.log(bin.name + ' has ' + object + ' ' + object.name );
           projectItems.push(prepareItemMetadata(object));
         }
       }
+      return projectItems;
     }
     $.writeln('\nprojectItems:' + projectItems.length + ' ' + projectItems);
 
@@ -591,6 +599,23 @@ function _prepareSingleValue(value){
 }
 function _prepareError(error_msg){
     return JSON.stringify({"error": error_msg})
+}
+
+function logToFile(message) {
+    // Specify the path to the log file
+    var logFilePath = new File("C:/projects/logfile.txt"); // Change this path as needed
+
+    // Open the file in append mode
+    if (logFilePath.open("a")) { // "a" for append mode
+        // Create a timestamp
+        var timestamp = new Date().toLocaleString(); // Get current date and time
+        // Write the message with a timestamp
+        logFilePath.writeln("[" + timestamp + "] " + message);
+        // Close the file
+        logFilePath.close();
+    } else {
+        $.writeln("Error opening log file: " + logFilePath.error);
+    }
 }
 
 // var items = replaceItem('000f4259',
