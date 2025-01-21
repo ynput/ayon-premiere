@@ -98,7 +98,11 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             )
 
         if extension_version != deployed_extension_version:
-            self.log.info(f"Purging {target_path} because different version")
+            self.log.info(
+                f"Purging '{target_path}' with "
+                f"'{deployed_extension_version}', "
+                f"replacing with '{extension_version}'"
+            )
             shutil.rmtree(target_path)
             return True
 
