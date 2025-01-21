@@ -89,9 +89,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             # opens the existing extension manifest to get the Version attr
             with open(f"{target_path}/CSXS/manifest.xml", "rb") as xml_file:
                 installed_version = (
-                    ET.parse(xml_file)
-                    .find("*/Extension")
-                    .attrib.get("Version")
+                    ET.parse(xml_file).getroot().attrib.get("ExtensionBundleVersion")
                 )
             self.log.debug(
                 f"Current extension version found: {installed_version}"
@@ -108,9 +106,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
             with ZipFile(extension_path, "r") as archive:
                 xml_file = archive.open("CSXS/manifest.xml")
                 new_version = (
-                    ET.parse(xml_file)
-                    .find("*/Extension")
-                    .attrib.get("Version")
+                    ET.parse(xml_file).getroot().attrib.get("ExtensionBundleVersion")
                 )
                 if not new_version:
                     self.log.warning(
