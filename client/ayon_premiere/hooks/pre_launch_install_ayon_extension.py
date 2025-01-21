@@ -74,7 +74,9 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
         except Exception as error:
             self.log.warning(f"An unexpected error occured: {error}")
 
-    def _compare_extension_versions(self, target_path, extension_path):
+    def _compare_extension_versions(
+        self, target_path: str, extension_path: str
+    ) -> bool:
         try:
             import xml.etree.ElementTree as ET
             from shutil import rmtree
