@@ -25,9 +25,7 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
     def execute(self):
         try:
             settings = self.data["project_settings"]["premiere"]
-            if not settings["hooks"]["InstallAyonExtensionToPremiere"][
-                "enabled"
-            ]:
+            if not settings["auto_install_extension"]:
                 return
             self.inner_execute()
 

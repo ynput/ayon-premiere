@@ -1,27 +1,14 @@
 from ayon_server.settings import BaseSettingsModel, SettingsField
 
 
-class HookOptionalModel(BaseSettingsModel):
-    enabled: bool = SettingsField(False, title="Enabled")
-
-
-class HooksModel(BaseSettingsModel):
-    InstallAyonExtensionToPremiere: HookOptionalModel = SettingsField(
-        default_factory=HookOptionalModel,
-        title="Install AYON Extension",
-    )
-
-
 class PremiereSettings(BaseSettingsModel):
-    hooks: HooksModel = SettingsField(
-        default_factory=HooksModel, title="Hooks"
+    auto_install_extension: bool = SettingsField(
+        False,
+        title="Install AYON Extension",
+        description="Triggers pre-launch hook which installs extension."
     )
 
 
 DEFAULT_VALUES = {
-    "hooks": {
-        "InstallAyonExtensionToPremiere": {
-            "enabled": False,
-        }
-    }
+    "auto_install_extension": False
 }
