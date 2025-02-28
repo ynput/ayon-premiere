@@ -1,9 +1,7 @@
 import os
-from email.policy import default
 
 from ayon_core.lib import EnumDef
-from ayon_core.pipeline import get_representation_path
-from ayon_core.pipeline.load import LoadError
+from ayon_core.pipeline.load import LoadError, LoaderSwitchNotImplementedError
 
 from ayon_premiere import api
 from ayon_premiere.api.lib import get_unique_bin_name
@@ -32,7 +30,7 @@ class AECompLoader(api.PremiereLoader):
 
         new_bin_name = self._get_bin_name(context, name, stub)
 
-        path = self.filepath_from_context(context)
+        path = self.filepath_from_context(context).replace("\\", "/")
         if not path or not os.path.exists(path):
             raise LoadError(
                 f"Representation id `{repr_id}` has invalid path `{path}`")
@@ -63,42 +61,39 @@ class AECompLoader(api.PremiereLoader):
 
     def update(self, container, context):
         """ Switch asset or change version """
-        stub = self.get_stub()
-        stored_bin = container.pop("bin")
-        old_metadata = stub.get_item_metadata(stored_bin)
-
-        folder_name = context["folder"]["name"]
-        product_name = context["product"]["name"]
-        repre_entity = context["representation"]
-
-        new_container_name = f"{folder_name}_{product_name}"
-        # switching assets
-        if container["namespace"] != new_container_name:
-            new_bin_name = self._get_bin_name(context, product_name, stub)
-        else:  # switching version - keep same name
-            new_bin_name = container["name"]
-        paths = [get_representation_path(repre_entity)]
-
-        is_image_sequence = False
-        if len(repre_entity["files"]) > 1:
-            is_image_sequence = True
-            dir_path = os.path.dirname(paths[0])
-            paths = [os.path.join(dir_path, repre_file["name"])
-                     for repre_file in context["representation"]["files"]]
-
-        paths = [path.replace("\\", "/") for path in paths]
-        new_bin = stub.replace_item(
-            stored_bin.id, paths, new_bin_name, is_image_sequence)
-
-        # new bin might be created
-        old_metadata["members"] = [new_bin.id]
-        old_metadata["representation"] = repre_entity["id"]
-        old_metadata["name"] = new_bin_name
-        old_metadata["namespace"] = new_container_name
-        stub.imprint(
-            new_bin.id,
-            old_metadata
+        raise LoaderSwitchNotImplementedError(
+            "Update currently not possible as no UI to select composition " 
+            "exists. Please Remove item and load it again from Loader."
         )
+
+        # stub = self.get_stub()
+        # stored_bin = container.pop("bin")
+        # old_metadata = stub.get_item_metadata(stored_bin)
+        #
+        # folder_name = context["folder"]["name"]
+        # product_name = context["product"]["name"]
+        # repre_entity = context["representation"]
+        #
+        # new_container_name = f"{folder_name}_{product_name}"
+        # # switching assets
+        # if container["namespace"] != new_container_name:
+        #     new_bin_name = self._get_bin_name(context, product_name, stub)
+        # else:  # switching version - keep same name
+        #     new_bin_name = container["name"]
+        #
+        # path = self.filepath_from_context(context).replace("\\", "/")
+        # new_bin = stub.replace_item(
+        #     stored_bin.id, path, new_bin_name)
+        #
+        # # new bin might be created
+        # old_metadata["members"] = [new_bin.id]
+        # old_metadata["representation"] = repre_entity["id"]
+        # old_metadata["name"] = new_bin_name
+        # old_metadata["namespace"] = new_container_name
+        # stub.imprint(
+        #     new_bin.id,
+        #     old_metadata
+        # )
 
     def remove(self, container):
         """
@@ -123,7 +118,7 @@ class AECompLoader(api.PremiereLoader):
         }
         default_comp = ""
         if items:
-            default_comp = list(items.keys())[0]
+            default_comp = [list(items.keys())[0]]
         return [
             EnumDef(
                 "compositions",
