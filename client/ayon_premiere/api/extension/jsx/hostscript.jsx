@@ -367,9 +367,10 @@ function importAEComp(path, binName, compNames, throwError){
 
     fp = new File(path);
     if (fp.exists){
+        var targetBin = app.project.rootItem.createBin(binName);
         try {
             if (compNames.length > 0){
-                ret = app.project.importAEComps(file.fsName, targetBin, compNames);
+                ret = app.project.importAEComps(file.fsName, compNames, targetBin);
             }else{
                 ret = app.project.importAllAEComps(file.fsName, targetBin);
             }

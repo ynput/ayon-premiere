@@ -167,11 +167,11 @@ function main(websocket_url){
         log.warn('Server called client route "import_ae_comp":', data);
         var escapedPath = EscapeStringForJSX(data.path);
         var escapedCompNames = data.comp_names.map(comp_name => EscapeStringForJSX(comp_name));
-        return runEvalScript("importAEComp('" + JSON.stringify(escapedPath) + "', " +
+        return runEvalScript("importAEComp('" + escapedPath + "', " +
                                          "'" + data.item_name + "'," +
                                          JSON.stringify(escapedCompNames) + ")")
             .then(function(result){
-                log.warn("importFile: " + result);
+                log.warn("importAEComp: " + result);
                 return result;
             });
     });
