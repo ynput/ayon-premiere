@@ -347,6 +347,53 @@ function importFiles(paths, item_name, isImageSequence, throwError){
     return JSON.stringify(ret);
 }
 
+function importAEComp(path, binName, compNames, throwError){
+    /**
+     * Imports file(s) into bin.
+     *
+     * Args:
+     *    paths (str): json list with absolute paths to source files
+     *    binName (str): label for bin
+     *    compNames (list[str]): import only selected composition
+     *    throwError (bool): reraise error (when function is called from
+     *       another)
+     * Returns:
+     *    JSON {name, id}
+     */
+    var ret = {};
+    var suppressUI = true;
+
+    fp = new File(path);
+    if (fp.exists){
+        var targetBin = app.project.rootItem.createBin(binName);
+        try {
+            if (compNames.length > 0){
+                ret = app.project.importAEComps(fp.fsName, compNames, targetBin);
+            }else{
+                ret = app.project.importAllAEComps(fp.fsName, targetBin);
+            }
+
+        } catch (error) {
+            if (throwError){
+                throw error;
+            }
+            return _prepareError(error.toString() + path);
+        } finally {
+            fp.close();
+        }
+    }else{
+        var errMesage = "File " + path + " not found.";
+        if (throwError){
+            throw new Error(errMesage);
+        }
+	    return _prepareError(errMesage);
+    }
+
+    ret = {"name": binName, "id": targetBin.nodeId}
+
+    return JSON.stringify(ret);
+}
+
 function replaceItem(bin_id, paths, item_name, isImageSequence){
     /**
      * Replaces loaded file with new file and updates name

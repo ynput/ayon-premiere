@@ -163,6 +163,19 @@ function main(websocket_url){
             });
     });
 
+    RPC.addRoute('Premiere.import_ae_comp', function (data) {
+        log.warn('Server called client route "import_ae_comp":', data);
+        var escapedPath = EscapeStringForJSX(data.path);
+        var escapedCompNames = data.comp_names.map(comp_name => EscapeStringForJSX(comp_name));
+        return runEvalScript("importAEComp('" + escapedPath + "', " +
+                                         "'" + data.item_name + "'," +
+                                         JSON.stringify(escapedCompNames) + ")")
+            .then(function(result){
+                log.warn("importAEComp: " + result);
+                return result;
+            });
+    });
+
     RPC.addRoute('Premiere.replace_item', function (data) {
         log.warn('Server called client route "replace_item":', data);
         var escapedPaths = data.paths.map(path => EscapeStringForJSX(path));

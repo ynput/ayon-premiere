@@ -292,6 +292,27 @@ class PremiereServerStub():
         if records:
             return records.pop()
 
+    def import_ae_comp(self, path, item_name, comp_names=None):
+        """
+            Imports file(s) into Bin. Used in Loader
+        Args:
+            path (str): absolute path for AE workfile
+            item_name (string): label for created Bin
+            comp_names (list[str]): selected comp
+
+        """
+        res = self.websocketserver.call(
+            self.client.call(
+                "Premiere.import_ae_comp",
+                path=path,
+                item_name=item_name,
+                comp_names=comp_names
+            )
+        )
+        records = self._to_records(self._handle_return(res))
+        if records:
+            return records.pop()
+
     def replace_item(self, item_id, paths, item_name, is_image_sequence):
         """ Replace FootageItem with new file
 
