@@ -62,7 +62,7 @@ class AECompLoader(api.PremiereLoader):
     def update(self, container, context):
         """ Switch asset or change version """
         raise LoaderSwitchNotImplementedError(
-            "Update currently not possible as no UI to select composition " 
+            "Update currently not possible as no UI to select composition "
             "exists. Please Remove item and load it again from Loader."
         )
 
