@@ -301,8 +301,36 @@ function getSelectedItems(comps, folders, footages){
     return '[' + items.join() + ']';
 }
 
+function getLastSelectedBin(){
+    /**
+     * Get last selected item if it is bin.
+     *
+     * Should find lowest selected bin in hierarchy.
+     */
+    var selectedItems = app.getCurrentProjectViewSelection();
+    if (selectedItems){
+        var lastItem = selectedItems[selectedItems.length - 1];
+        if (lastItem.type === ProjectItemType.BIN){
+            return lastItem;
+        }
+    }
+}
 
-function importFiles(paths, item_name, isImageSequence, throwError){
+function _createNewBin(binName, useSelection){
+    /**
+     * Helper to create new bin
+     */
+    var parentBin = app.project.rootItem;
+    if (useSelection){
+        var lastSelectedBin = getLastSelectedBin();
+        if (lastSelectedBin){
+            parentBin = lastSelectedBin;
+        }
+    }
+    return parentBin.createBin(binName);
+}
+
+function importFiles(paths, item_name, isImageSequence, throwError, useSelection){
     /**
      * Imports file(s) into bin.
      *
@@ -313,6 +341,8 @@ function importFiles(paths, item_name, isImageSequence, throwError){
      *       file sequence
      *    throwError (bool): reraise error (when function is called from
      *       another)
+     *    useSelection (bool): if bin should be created in selected bin
+     *         set to false in bin replacement, that should be in original place
      * Returns:
      *    JSON {name, id}
      */
@@ -321,12 +351,20 @@ function importFiles(paths, item_name, isImageSequence, throwError){
     var suppressUI = true;
     var importAsNumberedStills = isImageSequence;
 
-    var targetBin = app.project.rootItem.createBin(item_name);
+    var targetBin = _createNewBin(item_name, useSelection);
 
     fp = new File(paths[0]);
     if (fp.exists){
         try {
             ret = app.project.importFiles(paths, suppressUI, targetBin, importAsNumberedStills);
+            var useSelection = true;
+            ret = app.project.importFiles(
+                paths,
+                suppressUI,
+                targetBin,
+                importAsNumberedStills,
+                useSelection
+            );
         } catch (error) {
             if (throwError){
                 throw error;
@@ -366,7 +404,7 @@ function importAEComp(path, binName, compNames, throwError){
 
     fp = new File(path);
     if (fp.exists){
-        var targetBin = app.project.rootItem.createBin(binName);
+        var targetBin = _createNewBin(binName, true);
         try {
             if (compNames.length > 0){
                 ret = app.project.importAEComps(fp.fsName, compNames, targetBin);
@@ -443,7 +481,14 @@ function replaceItem(bin_id, paths, item_name, isImageSequence){
     var targetBin = getProjectItemById(bin_id);
     if (targetBin){
         try{
-            var newBinJson = importFiles(paths, item_name, isImageSequence, true);
+            var useSelection = false; // not use selection if replacement
+            var newBinJson = importFiles(
+                paths,
+                item_name,
+                isImageSequence,
+                true,
+                useSelection
+            );
             var newBinId = JSON.parse(newBinJson)["id"];
             var newBin = getProjectItemById(newBinId);
             var newProjectItem = newBin.children[0];
