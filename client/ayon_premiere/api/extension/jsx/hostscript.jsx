@@ -609,8 +609,8 @@ function deleteItem(item_id){
      *  Not restricted only to comp, it could delete
      *  any item with 'id'
      */
-    var item_and_parent = getProjectItemAndParentById(item_id);
-    var item = item_and_parent["item"];
+    var itemAndParent = getProjectItemAndParentById(item_id);
+    var item = itemAndParent["item"];
     if (item && item.type === ProjectItemType.BIN){
         item.deleteBin();
     }else{
