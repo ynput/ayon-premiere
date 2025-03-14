@@ -356,7 +356,6 @@ function importFiles(paths, item_name, isImageSequence, throwError, useSelection
     fp = new File(paths[0]);
     if (fp.exists){
         try {
-            ret = app.project.importFiles(paths, suppressUI, targetBin, importAsNumberedStills);
             var useSelection = true;
             ret = app.project.importFiles(
                 paths,
@@ -478,7 +477,9 @@ function replaceItem(bin_id, paths, item_name, isImageSequence){
         }
     }
 
-    var targetBin = getProjectItemById(bin_id);
+    var targetBinInfo = getProjectItemAndParentById(bin_id);
+    var targetBin = targetBinInfo["item"];
+    var parentTargetBin = targetBinInfo["parent"];
     if (targetBin){
         try{
             var useSelection = false; // not use selection if replacement
@@ -490,12 +491,14 @@ function replaceItem(bin_id, paths, item_name, isImageSequence){
                 useSelection
             );
             var newBinId = JSON.parse(newBinJson)["id"];
-            var newBin = getProjectItemById(newBinId);
+            var newBinInfo = getProjectItemAndParentById(newBinId);
+            var newBin = newBinInfo["item"];
             var newProjectItem = newBin.children[0];
             var oldProjectItem = targetBin.children[0];
             repointMediaInSequences(oldProjectItem, newProjectItem);
             targetBin.deleteBin();
             targetBin = newBin;
+            targetBin.moveBin(parentTargetBin);
             // TODO it should work just to replace media, but it doesnt
             // same workflow used for image sequences >> create new bin
             // }else{
@@ -520,29 +523,41 @@ function replaceItem(bin_id, paths, item_name, isImageSequence){
     return JSON.stringify(ret);
 }
 
-function getProjectItemById(nodeId) {
+function getProjectItemAndParentById(nodeId) {
     /** Looks for item (bin|footage) by its nodeId
      *
      * Args:
      *     nodeId (string): item id
+     *
+     * Returns:
+     *     {"item": foundItem, "parent": parentOfItem}
      */
     var project = app.project;
     var rootItem = project.rootItem;
 
     // Helper function to search recursively in bins
     function findInBin(bin, nodeId) {
+        /** Looks for item (bin|footage) by its nodeId
+         *
+         * Args:
+         *     bin (ProjectItem): of type Bin
+         *     nodeId (string): item id
+         *
+         * Returns:
+         *     {"item": foundItem, "parent": parentOfItem}
+         */
         for (var j = 0; j < bin.children.numItems; j++) {
             var childItem = bin.children[j];
 
             if (childItem.nodeId === nodeId) {
-                return childItem; // Found the item
+                return { "item": childItem, "parent": bin };
             }
 
             // Recursively search in sub-bins
             if (childItem.type === ProjectItemType.BIN) {
                 var foundChild = findInBin(childItem, nodeId);
                 if (foundChild) {
-                    return foundChild; // Return if found in sub-bins
+                    return foundChild;
                 }
             }
         }
@@ -556,7 +571,8 @@ function getProjectItemById(nodeId) {
 
         // Check if the item's nodeId matches the provided nodeId
         if (item.nodeId === nodeId) {
-            return item; // Return the matching ProjectItem
+            // Return the matching ProjectItem
+            return { "item": item, "parent": rootItem };
         }
 
         // If the item is a bin, check its children recursively
@@ -593,7 +609,8 @@ function deleteItem(item_id){
      *  Not restricted only to comp, it could delete
      *  any item with 'id'
      */
-    var item = getProjectItemById(item_id);
+    var item_and_parent = getProjectItemAndParentById(item_id);
+    var item = item_and_parent["item"];
     if (item && item.type === ProjectItemType.BIN){
         item.deleteBin();
     }else{
