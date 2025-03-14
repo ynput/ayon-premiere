@@ -477,7 +477,7 @@ function replaceItem(bin_id, paths, item_name, isImageSequence){
         }
     }
 
-    var targetBinInfo = getProjectItemAndParentById(bin_id);
+    var targetBinInfo = getBinAndParentById(bin_id);
     var targetBin = targetBinInfo["item"];
     var parentTargetBin = targetBinInfo["parent"];
     if (targetBin){
@@ -491,7 +491,7 @@ function replaceItem(bin_id, paths, item_name, isImageSequence){
                 useSelection
             );
             var newBinId = JSON.parse(newBinJson)["id"];
-            var newBinInfo = getProjectItemAndParentById(newBinId);
+            var newBinInfo = getBinAndParentById(newBinId);
             var newBin = newBinInfo["item"];
             var newProjectItem = newBin.children[0];
             var oldProjectItem = targetBin.children[0];
@@ -523,8 +523,8 @@ function replaceItem(bin_id, paths, item_name, isImageSequence){
     return JSON.stringify(ret);
 }
 
-function getProjectItemAndParentById(nodeId) {
-    /** Looks for item (bin|footage) by its nodeId
+function getBinAndParentById(nodeId) {
+    /** Looks for Bin by its nodeId
      *
      * Args:
      *     nodeId (string): item id
@@ -604,12 +604,12 @@ function renameItem(item_id, new_name){
 
 function deleteItem(item_id){
     /**
-     *  Delete any 'item_id'
+     *  Delete loaded bin
      *
      *  Not restricted only to comp, it could delete
      *  any item with 'id'
      */
-    var itemAndParent = getProjectItemAndParentById(item_id);
+    var itemAndParent = getBinAndParentById(item_id);
     var item = itemAndParent["item"];
     if (item && item.type === ProjectItemType.BIN){
         item.deleteBin();
