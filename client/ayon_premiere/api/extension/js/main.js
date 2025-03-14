@@ -156,7 +156,7 @@ function main(websocket_url){
         var escapedPaths = data.paths.map(path => EscapeStringForJSX(path));
         return runEvalScript("importFiles(" + JSON.stringify(escapedPaths) + ", " +
                                          "'" + data.item_name + "'," +
-                                         data.is_image_sequence + ")")
+                                         data.is_image_sequence + ", true, true)")
             .then(function(result){
                 log.warn("importFile: " + result);
                 return result;
