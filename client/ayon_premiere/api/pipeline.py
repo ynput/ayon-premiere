@@ -232,7 +232,8 @@ def containerise(
     namespace,
     bin_item,
     context,
-    loader=None
+    loader=None,
+    imported_composition=None
 ):
     """
     Containerisation enables a tracking of version, author and origin
@@ -248,6 +249,7 @@ def containerise(
         bin_item (PPROItem): Bin to containerise
         context (dict): Asset information
         loader (str, optional): Name of loader used to produce this container.
+        imported_composition (str, optional): loaded composition from AE
 
     Returns:
         container (str): Name of container assembly
@@ -261,6 +263,8 @@ def containerise(
         "representation": context["representation"]["id"],
         "members": [bin_item.id]
     }
+    if imported_composition:
+        data["imported_composition"] = imported_composition
 
     stub = get_stub()
     stub.imprint(bin_item.id, data)
