@@ -410,7 +410,6 @@ function importAEComp(path, binName, compNames, throwError){
             }else{
                 ret = app.project.importAllAEComps(fp.fsName, targetBin);
             }
-
         } catch (error) {
             if (throwError){
                 throw error;
@@ -432,12 +431,15 @@ function importAEComp(path, binName, compNames, throwError){
     return JSON.stringify(ret);
 }
 
-function replacAEComp(path, binName, compNames, throwError) {
+function replaceAEComp(bin_id, path, binName, compNames, throwError) {
     /**
      * Replace imported After Effects compositions
      * Args: see original docstring
      */
     const targetBinInfo = getBinAndParentById(bin_id);
+    if (!targetBinInfo) {
+        return _prepareError("There is no item with " + bin_id);
+    }
     return _replaceBinContent(
         importAEComp,
         [path, binName, compNames],
@@ -453,6 +455,11 @@ function replaceItem(bin_id, paths, itemName, isImageSequence) {
      * Args: see original docstring
      */
     const targetBinInfo = getBinAndParentById(bin_id);
+
+    if (!targetBinInfo) {
+        return _prepareError("There is no item with " + bin_id);
+    }
+
     return _replaceBinContent(
         importFiles,
         [paths, itemName, isImageSequence, true, false],
@@ -465,22 +472,16 @@ function replaceItem(bin_id, paths, itemName, isImageSequence) {
 function _replaceBinContent(importFunc, importArgs, targetBinInfo, itemName, paths) {
     var parentTargetBin = targetBinInfo["parent"];
     var targetBin = targetBinInfo["item"];
-    
-    if (!targetBin) {
-        return _prepareError("There is no item with " + bin_id);
-    }
 
     try {
-        // Import new content
-        const newBinJson = importFunc.apply(importArgs);
+        const newBinJson = importFunc.apply(null, importArgs);
         const newBinId = JSON.parse(newBinJson).id;
         const newBinInfo = getBinAndParentById(newBinId);
         const newBin = newBinInfo.item;
-
         // Repoint media for all items in bin
         for (var j = 0; j < targetBin.children.numItems; j++) {
-            const oldProjectItem = targetBin.children[j];
-            const newProjectItem = newBin.children[j];
+            var oldProjectItem = targetBin.children[j];
+            var newProjectItem = newBin.children[j];
             repointMediaInSequences(oldProjectItem, newProjectItem);
         }
 

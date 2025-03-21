@@ -180,9 +180,10 @@ function main(websocket_url){
         log.warn('Server called client route "replace_ae_comp":', data);
         var escapedPath = EscapeStringForJSX(data.path);
         var escapedCompNames = data.comp_names.map(comp_name => EscapeStringForJSX(comp_name));
-        return runEvalScript("replaceAEComp('" + escapedPath + "', " +
+        return runEvalScript("replaceAEComp('" + data.item_id + "', " +
+                                        "'" + escapedPath + "', " +
                                          "'" + data.item_name + "'," +
-                                         JSON.stringify(escapedCompNames) + ")")
+                                         JSON.stringify(escapedCompNames) + ", false)")
             .then(function(result){
                 log.warn("replaceAEComp: " + result);
                 return result;
