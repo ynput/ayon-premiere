@@ -9,7 +9,7 @@ from ayon_core.pipeline import (
     register_loader_plugin_path,
     register_creator_plugin_path,
     register_workfile_build_plugin_path,
-    AVALON_CONTAINER_ID,
+    AYON_CONTAINER_ID,
     AVALON_INSTANCE_ID,
     AYON_INSTANCE_ID,
 )
@@ -254,7 +254,7 @@ def containerise(
     """
     data = {
         "schema": "openpype:container-2.0",
-        "id": AVALON_CONTAINER_ID,
+        "id": AYON_CONTAINER_ID,
         "name": name,
         "namespace": namespace,
         "loader": str(loader),
