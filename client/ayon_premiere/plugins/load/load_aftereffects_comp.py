@@ -29,13 +29,13 @@ class AECompLoader(api.PremiereLoader):
         stub = self.get_stub()
         options = options or {}
         repr_entity = context["representation"]
-        repr_id = repr_entity["id"]
+        repre_id = repr_entity["id"]
 
         # Validate path
         path = self.filepath_from_context(context).replace("\\", "/")
         if not os.path.exists(path):
             raise LoadError(
-                f"Invalid path for representation {repr_id}: {path}")
+                f"Invalid path for representation {repre_id}: {path}")
 
         # Get selected compositions
         selected_compositions = options.get(
@@ -52,7 +52,6 @@ class AECompLoader(api.PremiereLoader):
                 stub=stub,
                 folder_name=folder_name,
                 path=path,
-                repr_id=repr_id
             )
 
     def update(self, container: Dict[str, Any],
@@ -135,7 +134,6 @@ class AECompLoader(api.PremiereLoader):
         stub: Any,
         folder_name: str,
         path: str,
-        repr_id: str
     ) -> None:
         """Handle loading of a single composition."""
         # Generate unique bin name
@@ -143,10 +141,11 @@ class AECompLoader(api.PremiereLoader):
 
         # Import composition
         import_element = stub.import_ae_comp(path, new_bin_name, [composition])
+        repre_id = context["representation"]["id"]
         if not import_element:
             raise LoadError(
                 f"Failed to load composition '{composition}' "
-                f"(representation {repr_id}). "
+                f"(representation {repre_id}). "
                 "Check host app for error details."
             )
 
