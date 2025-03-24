@@ -108,7 +108,7 @@ class AECompLoader(api.PremiereLoader):
 
     def switch(self, container: Dict[str, Any],
                context: Dict[str, Any]) -> None:
-        """Alias for update to maintain backward compatibility."""
+        """Allows switching folder or product"""
         self.update(container, context)
 
     @classmethod
