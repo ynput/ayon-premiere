@@ -53,8 +53,11 @@ class AECompLoader(api.PremiereLoader):
                 path=path,
             )
 
-    def update(self, container: Dict[str, Any],
-               context: Dict[str, Any]) -> None:
+    def update(
+        self,
+        container: Dict[str, Any],
+        context: Dict[str, Any]
+    ) -> None:
         """Update container with new version or asset."""
         stub = self.get_stub()
         stored_bin = container.pop("bin")
@@ -104,8 +107,11 @@ class AECompLoader(api.PremiereLoader):
         stub.imprint(stored_bin.id, {})
         stub.delete_item(stored_bin.id)
 
-    def switch(self, container: Dict[str, Any],
-               context: Dict[str, Any]) -> None:
+    def switch(
+        self,
+        container: Dict[str, Any],
+        context: Dict[str, Any]
+    ) -> None:
         """Allows switching folder or product"""
         self.update(container, context)
 
