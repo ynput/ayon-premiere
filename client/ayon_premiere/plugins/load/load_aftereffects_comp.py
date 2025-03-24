@@ -44,7 +44,6 @@ class AECompLoader(api.PremiereLoader):
             raise LoadError("No compositions selected for loading")
 
         # Process each selected composition
-        folder_name = context["folder"]["name"]
         for composition in selected_compositions:
             self._load_single_composition(
                 context=context,
