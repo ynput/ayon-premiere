@@ -50,7 +50,6 @@ class AECompLoader(api.PremiereLoader):
                 context=context,
                 composition=composition,
                 stub=stub,
-                folder_name=folder_name,
                 path=path,
             )
 
@@ -132,7 +131,6 @@ class AECompLoader(api.PremiereLoader):
         context: Dict[str, Any],
         composition: str,
         stub: Any,
-        folder_name: str,
         path: str,
     ) -> None:
         """Handle loading of a single composition."""
@@ -151,6 +149,7 @@ class AECompLoader(api.PremiereLoader):
 
         # Create container
         product_name = context["product"]["name"]
+        folder_name = context["folder"]["name"]
         namespace = f"{folder_name}_{product_name}"
         api.containerise(
             new_bin_name,
