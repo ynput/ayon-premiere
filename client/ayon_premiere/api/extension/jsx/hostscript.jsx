@@ -390,7 +390,7 @@ function importAEComp(path, binName, compNames, throwError){
      * Imports file(s) into bin.
      *
      * Args:
-     *    paths (str): json list with absolute paths to source files
+     *    path (str): json list with absolute path to source file
      *    binName (str): label for bin
      *    compNames (list[str]): import only selected composition
      *    throwError (bool): reraise error (when function is called from
@@ -410,7 +410,6 @@ function importAEComp(path, binName, compNames, throwError){
             }else{
                 ret = app.project.importAllAEComps(fp.fsName, targetBin);
             }
-
         } catch (error) {
             if (throwError){
                 throw error;
@@ -432,95 +431,107 @@ function importAEComp(path, binName, compNames, throwError){
     return JSON.stringify(ret);
 }
 
-function replaceItem(bin_id, paths, item_name, isImageSequence){
+function replaceAEComp(bin_id, path, binName, compNames, throwError) {
     /**
-     * Replaces loaded file with new file and updates name
-     *
-     * Args:
-     *    bin_id (int): nodeId of Bin, not a index!
-     *    paths (list[string]): absolute paths to new files
-     *    item_name (string): new composition name
-     *    isImageSequence (bool): files loaded are numbered
-     *       file sequence
+     * Replace imported After Effects compositions
+     * Args: see original docstring
      */
+    const targetBinInfo = getBinAndParentById(bin_id);
+    if (!targetBinInfo) {
+        return _prepareError("There is no item with " + bin_id);
+    }
+    return _replaceBinContent(
+        importAEComp,
+        [path, binName, compNames],
+        targetBinInfo,
+        binName,
+        [path]
+    );
+}
 
-    function repointMediaInSequences(oldItem, newItem) {
-        var project = app.project;
-        var sequences = project.sequences; // Get the list of sequences
+function replaceItem(bin_id, paths, itemName, isImageSequence) {
+    /**
+     * Replaces bin content with new files
+     * Args: see original docstring
+     */
+    const targetBinInfo = getBinAndParentById(bin_id);
 
-        // Check if there are any sequences
-        if (sequences.length === 0) {
-            return;
+    if (!targetBinInfo) {
+        return _prepareError("There is no item with " + bin_id);
+    }
+
+    return _replaceBinContent(
+        importFiles,
+        [paths, itemName, isImageSequence, true, false],
+        targetBinInfo,
+        itemName,
+        paths
+    );
+}
+
+function _replaceBinContent(importFunc, importArgs, targetBinInfo, itemName, paths) {
+    var parentTargetBin = targetBinInfo["parent"];
+    var targetBin = targetBinInfo["item"];
+
+    try {
+        const newBinJson = importFunc.apply(null, importArgs);
+        const newBinId = JSON.parse(newBinJson).id;
+        const newBinInfo = getBinAndParentById(newBinId);
+        const newBin = newBinInfo.item;
+        // Repoint media for all items in bin
+        for (var j = 0; j < targetBin.children.numItems; j++) {
+            var oldProjectItem = targetBin.children[j];
+            var newProjectItem = newBin.children[j];
+            repointMediaInSequences(oldProjectItem, newProjectItem);
         }
 
-        // Iterate through each sequence
-        for (var i = 0; i < sequences.length; i++) {
-            var sequence = sequences[i];
+        // Replace old bin
+        targetBin.deleteBin();
+        newBin.moveBin(parentTargetBin);
 
-            // You can add more actions here, e.g., accessing clips in the sequence
-            var videoTracks = sequence.videoTracks; // Get video tracks
+        return JSON.stringify({
+            name: itemName,
+            id: newBin.nodeId
+        });
 
-            for (var j = 0; j < videoTracks.numTracks; j++) {
-                var track = videoTracks[j];
+    } catch (error) {
+        return _prepareError(error.toString() + paths[0]);
+    } finally {
+        fp.close();
+    }
+}
 
-                // Loop through clips in the track
-                for (var k = 0; k < track.clips.numItems; k++) {
-                    var clip = track.clips[k];
-                    if (clip.projectItem.nodeId === oldItem.nodeId) {
-                        // Replace the project item with the new item
-                        clip.projectItem = newItem;
+function repointMediaInSequences(oldItem, newItem) {
+    var project = app.project;
+    var sequences = project.sequences; // Get the list of sequences
 
-                        clip.name = newItem.name;
-                    }
+    // Check if there are any sequences
+    if (sequences.length === 0) {
+        return;
+    }
+
+    // Iterate through each sequence
+    for (var i = 0; i < sequences.length; i++) {
+        var sequence = sequences[i];
+
+        // You can add more actions here, e.g., accessing clips in the sequence
+        var videoTracks = sequence.videoTracks; // Get video tracks
+
+        for (var j = 0; j < videoTracks.numTracks; j++) {
+            var track = videoTracks[j];
+
+            // Loop through clips in the track
+            for (var k = 0; k < track.clips.numItems; k++) {
+                var clip = track.clips[k];
+                if (clip.projectItem.nodeId === oldItem.nodeId) {
+                    // Replace the project item with the new item
+                    clip.projectItem = newItem;
+
+                    clip.name = newItem.name;
                 }
             }
         }
     }
-
-    var targetBinInfo = getBinAndParentById(bin_id);
-    var targetBin = targetBinInfo["item"];
-    var parentTargetBin = targetBinInfo["parent"];
-    if (targetBin){
-        try{
-            var useSelection = false; // not use selection if replacement
-            var newBinJson = importFiles(
-                paths,
-                item_name,
-                isImageSequence,
-                true,
-                useSelection
-            );
-            var newBinId = JSON.parse(newBinJson)["id"];
-            var newBinInfo = getBinAndParentById(newBinId);
-            var newBin = newBinInfo["item"];
-            var newProjectItem = newBin.children[0];
-            var oldProjectItem = targetBin.children[0];
-            repointMediaInSequences(oldProjectItem, newProjectItem);
-            targetBin.deleteBin();
-            targetBin = newBin;
-            targetBin.moveBin(parentTargetBin);
-            // TODO it should work just to replace media, but it doesnt
-            // same workflow used for image sequences >> create new bin
-            // }else{
-            //     var child = targetBin.children[0];
-            //     if (child.canChangeMediaPath()){
-            //         var overrideChecks = true;
-            //         var res = child.changeMediaPath(paths[0], overrideChecks);
-            //         child.refreshMedia();
-            //     }
-            //     targetBin.name = item_name;
-            // }
-        } catch (error) {
-            return _prepareError(error.toString() + paths[0]);
-        } finally {
-            fp.close();
-        }
-    }else{
-        return _prepareError("There is no item with "+ bin_id);
-    }
-    ret = {"name": item_name, "id": targetBin.nodeId}
-
-    return JSON.stringify(ret);
 }
 
 function getBinAndParentById(nodeId) {
