@@ -9,7 +9,7 @@ from ayon_core.pipeline import (
     register_loader_plugin_path,
     register_creator_plugin_path,
     register_workfile_build_plugin_path,
-    AVALON_CONTAINER_ID,
+    AYON_CONTAINER_ID,
     AVALON_INSTANCE_ID,
     AYON_INSTANCE_ID,
 )
@@ -232,7 +232,8 @@ def containerise(
     namespace,
     bin_item,
     context,
-    loader=None
+    loader=None,
+    imported_composition=None
 ):
     """
     Containerisation enables a tracking of version, author and origin
@@ -248,19 +249,22 @@ def containerise(
         bin_item (PPROItem): Bin to containerise
         context (dict): Asset information
         loader (str, optional): Name of loader used to produce this container.
+        imported_composition (str, optional): loaded composition from AE
 
     Returns:
         container (str): Name of container assembly
     """
     data = {
         "schema": "openpype:container-2.0",
-        "id": AVALON_CONTAINER_ID,
+        "id": AYON_CONTAINER_ID,
         "name": name,
         "namespace": namespace,
         "loader": str(loader),
         "representation": context["representation"]["id"],
         "members": [bin_item.id]
     }
+    if imported_composition:
+        data["imported_composition"] = imported_composition
 
     stub = get_stub()
     stub.imprint(bin_item.id, data)
