@@ -197,7 +197,7 @@ function getItems(bins, sequences, footages){
               projectItems.push(prepareItemMetadata(item));
             } else if (item.type === ProjectItemType.BIN) { // bin
                 projectItems.push(prepareItemMetadata(item));
-                return walkBins(item, bins, sequences, footages, projectItems);
+                projectItems = walkBins(item, bins, sequences, footages, projectItems);
             }
           }
         } else if (footages && object.type === ProjectItemType.CLIP &&
