@@ -131,32 +131,41 @@ function getActiveDocumentFullName(){
 
 function getItems(bins, sequences, footages){
     /**
-     * Returns JSON representation of compositions and
-     * if 'collectLayers' then layers in comps too.
+     * Returns JSON representation of Bins, Sequences and Footages.
      *
      * Args:
-     *     bins (bool): return selected compositions
-     *     sequences (bool): return folders
+     *     bins (bool): return Bins
+     *     sequences (bool): return sequences from timeline
      *     footages (bool): return FootageItem
      * Returns:
-     *     (list) of JSON items
+     *     (list) of JSON items in format:
+             {
+                "name": item.name,
+                "id": item.nodeId,
+                "type": item_type,
+                "path": path,
+             }
      */
     var projectItems = [];
 
     var rootFolder = app.project.rootItem;
     // walk through root folder of project to differentiate between bins, sequences and clips
     for (var i = 0; i < rootFolder.children.numItems; i++) {
-      // $.pype.log('\nroot item at ' + i + " is of type " + rootFolder.children[i].type);
-      var item = rootFolder.children[i];
+        var item = rootFolder.children[i];
 
-      if (item.type === ProjectItemType.BIN) { // bin
-        if (bins){
+        if (item.type === ProjectItemType.BIN) {
+            if (bins){
+                projectItems.push(prepareItemMetadata(item));
+            }
+            projectItems = walkBins(
+                item, bins, sequences, footages, projectItems
+            );
+        } else if (
+            item.type === ProjectItemType.CLIP
+            && footages && item.getMediaPath()
+        ) {
             projectItems.push(prepareItemMetadata(item));
-          }
-        projectItems = walkBins(item, bins, sequences, footages, projectItems);
-      } else if (item.type === ProjectItemType.CLIP && footages && item.getMediaPath()) {
-        projectItems.push(prepareItemMetadata(item));
-      }
+        }
     }
 
     function prepareItemMetadata(item){
@@ -173,41 +182,42 @@ function getItems(bins, sequences, footages){
             "id": item.nodeId,
             "type": item_type,
             "path": path,
-            // "containing_comps": containing_comps
         };
         return JSON.stringify(item);
     }
 
-    // walk through bins recursively
     function walkBins (bin, bins, sequences, footages, projectItems) { // eslint-disable-line no-unused-vars
-
-      for (var i = 0; i < bin.children.numItems; i++) {
-        var object = bin.children[i];
-        // $.writeln(bin.name + ' has ' + object + ' ' + object.name  + ' of type ' +  object.type + ' and has mediapath ' + object.getMediaPath() );
-        if (object.type === ProjectItemType.BIN) { // bin
-          // $.writeln(object.name  + ' has ' +  object.children.numItems  );
-          if (bins){
-            projectItems.push(prepareItemMetadata(object));
-          }
-          for (var j = 0; j < object.children.numItems; j++) {
-            var item = object.children[j];
-            if (footages && item.type === ProjectItemType.CLIP &&
-                item.getMediaPath()) { // clip  in sub bin
-              // $.writeln(object.name  + ' has ' + obj + ' ' +  obj.name  );
-              projectItems.push(prepareItemMetadata(item));
-            } else if (item.type === ProjectItemType.BIN) { // bin
-                projectItems.push(prepareItemMetadata(item));
-                projectItems = walkBins(item, bins, sequences, footages, projectItems);
+        /** Walks through Bins recursively */
+        for (var i = 0; i < bin.children.numItems; i++) {
+            var object = bin.children[i];
+            if (object.type === ProjectItemType.BIN) { // bin
+              if (bins){
+                  projectItems.push(prepareItemMetadata(object));
+              }
+              for (var j = 0; j < object.children.numItems; j++) {
+                var item = object.children[j];
+                if (
+                    footages && item.type === ProjectItemType.CLIP
+                    && item.getMediaPath()
+                ) {
+                    projectItems.push(prepareItemMetadata(item));
+                } else if (item.type === ProjectItemType.BIN) {
+                    projectItems.push(prepareItemMetadata(item));
+                    projectItems = walkBins(
+                        item, bins, sequences, footages, projectItems
+                    );
+                }
+              }
+            } else if (
+                footages && object.type === ProjectItemType.CLIP
+                && object.getMediaPath()
+            ) {
+                projectItems.push(prepareItemMetadata(object));
             }
-          }
-        } else if (footages && object.type === ProjectItemType.CLIP &&
-                   object.getMediaPath()) { // clip in bin in root
-          // $.pype.log(bin.name + ' has ' + object + ' ' + object.name );
-          projectItems.push(prepareItemMetadata(object));
         }
-      }
-      return projectItems;
+        return projectItems;
     }
+
     $.writeln('\nprojectItems:' + projectItems.length + ' ' + projectItems);
 
     return '[' + projectItems.join() + ']';
