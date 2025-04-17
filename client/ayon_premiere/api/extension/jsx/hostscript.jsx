@@ -533,7 +533,8 @@ function repointMediaInSequences(oldItem, newItem) {
             // Loop through clips in the track
             for (var k = 0; k < track.clips.numItems; k++) {
                 var clip = track.clips[k];
-                if (clip.projectItem.nodeId === oldItem.nodeId) {
+                if (clip.projectItem
+                    && clip.projectItem.nodeId === oldItem.nodeId) {
                     // Replace the project item with the new item
                     clip.projectItem = newItem;
 
