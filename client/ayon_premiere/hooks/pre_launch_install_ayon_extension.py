@@ -1,9 +1,8 @@
-import os
-import platform
+from pathlib import Path
 from zipfile import ZipFile
 import xml.etree.ElementTree as ET
 from shutil import rmtree
-
+import platformdirs
 
 from ayon_premiere import PREMIERE_ADDON_ROOT
 from ayon_applications import PreLaunchHook, LaunchTypes
@@ -38,22 +37,20 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
     def inner_execute(self):
         self.log.info("Installing AYON Premiere extension.")
 
-        # Windows only for now.
-        if not platform.system().lower() == "windows":
-            self.log.info("Non Windows platform. Cancelling..")
-            return
-
-        target_path = os.path.join(
-            os.environ["appdata"], r"Adobe\CEP\extensions\io.ynput.PPRO.panel"
+        target_path = Path(
+            # roaming is applicable for windows
+            platformdirs.user_data_dir(roaming=True),
+            "Adobe/CEP/extensions/io.ynput.PPRO.panel"
         )
 
-        extension_path = os.path.join(
+        extension_path = Path(
             PREMIERE_ADDON_ROOT,
-            r"api\extension.zxp",
+            "api",
+            "extension.zxp",
         )
 
         # Extension already installed, compare the versions
-        if os.path.exists(target_path):
+        if target_path.is_dir():
             self.log.info(
                 f"The extension already exists at: {target_path}. "
                 f"Comparing versions.."
@@ -65,27 +62,27 @@ class InstallAyonExtensionToPremiere(PreLaunchHook):
 
         try:
             self.log.debug(f"Creating directory: {target_path}")
-            os.makedirs(target_path, exist_ok=True)
+            target_path.mkdir(parents=True, exist_ok=True)
 
             with ZipFile(extension_path, "r") as archive:
                 archive.extractall(path=target_path)
             self.log.info("Successfully installed AYON extension")
 
-        except OSError as error:
-            self.log.warning(f"OS error has occured: {error}")
-
         except PermissionError as error:
             self.log.warning(f"Permissions error has occured: {error}")
+
+        except OSError as error:
+            self.log.warning(f"OS error has occured: {error}")
 
         except Exception as error:
             self.log.warning(f"An unexpected error occured: {error}")
 
     def _compare_extension_versions(
-        self, target_path: str, extension_path: str
+        self, target_path: Path, extension_path: Path
     ) -> bool:
         try:
             # opens the existing extension manifest to get the Version attr
-            with open(f"{target_path}/CSXS/manifest.xml", "rb") as xml_file:
+            with target_path.joinpath("CSXS", "manifest.xml").open("rb") as xml_file:
                 installed_version = (
                     ET.parse(xml_file)
                     .getroot()
