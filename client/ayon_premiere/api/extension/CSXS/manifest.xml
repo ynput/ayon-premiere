@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ExtensionManifest Version="6.0"
 				   ExtensionBundleId="io.ynput.PPRO.panel"
-				   ExtensionBundleVersion="1.1.6"
+				   ExtensionBundleVersion="1.1.8"
 				   ExtensionBundleName="io.ynput.PPRO.panel"
 				   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 	<ExtensionList>
