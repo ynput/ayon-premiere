@@ -529,18 +529,51 @@ function repointMediaInSequences(oldItem, newItem) {
 
         for (var j = 0; j < videoTracks.numTracks; j++) {
             var track = videoTracks[j];
+            var clipsToReplace = [];
 
             // Loop through clips in the track
             for (var k = 0; k < track.clips.numItems; k++) {
                 var clip = track.clips[k];
                 if (clip.projectItem
                     && clip.projectItem.nodeId === oldItem.nodeId) {
-                    // Replace the project item with the new item
-                    clip.projectItem = newItem;
-
-                    clip.name = newItem.name;
+                    clipsToReplace.push({
+                        index: k,
+                        oldClip: clip
+                    });
                 }
             }
+            // Second pass: Replace in reverse order to maintain indices
+            clipsToReplace.reverse();
+            for (var m = 0; m < clipsToReplace.length; m++) {
+                var item = clipsToReplace[m];
+                var oldClip = item.oldClip;
+
+                var old_start = oldClip.start;
+                var old_end = oldClip.end;
+                var old_in = oldClip.inPoint;
+                var old_out = oldClip.outPoint;
+
+                var newClip = track.overwriteClip(newItem, oldClip.start.ticks);
+
+                // Copy critical properties
+                newClip.start = old_start;
+                newClip.end = old_end;
+                newClip.inPoint = old_in;
+                newClip.outPoint = old_out;
+                newClip.speed = oldClip.speed;
+
+                // Copy effects
+                for (var e = 1; e <= oldClip.components.numItems; e++) {
+                    var effect = oldClip.components[e];
+                    newClip.components[e].properties = effect.properties;
+                }
+
+                // Optional: Copy name/markers
+                newClip.name = oldClip.name;
+
+                // Remove old clip
+                oldClip.remove(true, true);
+            };
         }
     }
 }
@@ -750,10 +783,17 @@ function logToFile(message) {
     }
 }
 
-// var items = replaceItem('000f4259',
-//     ['C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain/v020/ad_shot02_renderAe_animationMain_v020.1001.png',
-//      'C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain/v020/ad_shot02_renderAe_animationMain_v020.1002.png',
-//      'C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain/v020/ad_shot02_renderAe_animationMain_v020.1003.png'],
+// var items = replaceItem('000f427a',
+//     ["C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1001.exr"
+//         ,"C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1002.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1003.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1004.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1005.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1006.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1007.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1008.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1009.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1010.exr"],
 //     'new name2', true);
 
 // var items = replaceItem(
