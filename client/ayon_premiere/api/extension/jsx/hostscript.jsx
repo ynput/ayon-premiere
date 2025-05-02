@@ -470,6 +470,12 @@ function replaceItem(bin_id, paths, itemName, isImageSequence) {
         return _prepareError("There is no item with " + bin_id);
     }
 
+    if (!isImageSequence){
+        return _replaceMovieContent(
+            targetBinInfo, paths[0], itemName
+        )
+    }
+
     return _replaceBinContent(
         importFiles,
         [paths, itemName, isImageSequence, true, false],
@@ -492,7 +498,8 @@ function _replaceBinContent(importFunc, importArgs, targetBinInfo, itemName, pat
         for (var j = 0; j < targetBin.children.numItems; j++) {
             var oldProjectItem = targetBin.children[j];
             var newProjectItem = newBin.children[j];
-            repointMediaInSequences(oldProjectItem, newProjectItem);
+            var fullReplace = true;
+            repointMediaInSequences(oldProjectItem, newProjectItem, fullReplace);
         }
 
         // Replace old bin
@@ -511,7 +518,7 @@ function _replaceBinContent(importFunc, importArgs, targetBinInfo, itemName, pat
     }
 }
 
-function repointMediaInSequences(oldItem, newItem) {
+function repointMediaInSequences(oldItem, newItem, fullReplace) {
     var project = app.project;
     var sequences = project.sequences; // Get the list of sequences
 
@@ -529,52 +536,72 @@ function repointMediaInSequences(oldItem, newItem) {
 
         for (var j = 0; j < videoTracks.numTracks; j++) {
             var track = videoTracks[j];
-            var clipsToReplace = [];
 
             // Loop through clips in the track
             for (var k = 0; k < track.clips.numItems; k++) {
                 var clip = track.clips[k];
                 if (clip.projectItem
                     && clip.projectItem.nodeId === oldItem.nodeId) {
-                    clipsToReplace.push({
-                        index: k,
-                        oldClip: clip
-                    });
+                    if (fullReplace){
+                        // Replace the project item with the new item
+                        clip.projectItem = newItem;
+                    }
+
+                    clip.name = newItem.name;
                 }
             }
-            // Second pass: Replace in reverse order to maintain indices
-            clipsToReplace.reverse();
-            for (var m = 0; m < clipsToReplace.length; m++) {
-                var item = clipsToReplace[m];
-                var oldClip = item.oldClip;
-
-                var old_start = oldClip.start;
-                var old_end = oldClip.end;
-                var old_in = oldClip.inPoint;
-                var old_out = oldClip.outPoint;
-
-                var newClip = track.overwriteClip(newItem, oldClip.start.ticks);
-
-                // Copy critical properties
-                newClip.start = old_start;
-                newClip.end = old_end;
-                newClip.inPoint = old_in;
-                newClip.outPoint = old_out;
-                newClip.speed = oldClip.speed;
-
-                // Copy effects
-                for (var e = 1; e <= oldClip.components.numItems; e++) {
-                    var effect = oldClip.components[e];
-                    newClip.components[e].properties = effect.properties;
-                }
-
-                // Optional: Copy name/markers
-                newClip.name = oldClip.name;
-
-                // Remove old clip
-                oldClip.remove(true, true);
-            };
         }
+    }
+}
+
+function _replaceMovieContent(targetBinInfo, path, itemName){
+    /** Possibly temporary function to replace movies
+     *
+     * Original update of image sequences and comps cannot
+     * keep trims, this one should.
+     * (Original update cannot do changeMediaPath)
+     *
+     * Args:
+     *     targetBinInfo (dict): target bin info (parent etc)
+     *     path (str): absolute path to new movie
+     *     itemName (str): name of updated Bin
+     *
+     * Returns:
+     *     {"item": foundItem, "parent": parentOfItem}
+     */
+    var targetBin = targetBinInfo["item"];
+
+    try {
+        for (var i = 0; i < targetBin.children.length; i++) {
+            var item = targetBin.children[i];
+
+            if (!item.canChangeMediaPath()) {
+                continue;
+            }
+
+            path = path.replace(/\//g, "\\");
+            item.changeMediaPath(path, true);
+
+            var file = new File(path);
+            item.name = file.name;
+
+            var fullReplace = false;  //rename only
+            repointMediaInSequences(item, item, fullReplace);
+
+            // expects only single movie in a bin
+            break;
+        }
+        targetBin.name = itemName;
+
+        return JSON.stringify({
+            name: itemName,
+            id: targetBin.nodeId
+        });
+
+    } catch (error) {
+        return _prepareError(error.toString() + paths[0]);
+    } finally {
+        fp.close();
     }
 }
 
