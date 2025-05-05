@@ -600,8 +600,6 @@ function _replaceMovieContent(targetBinInfo, path, itemName){
 
     } catch (error) {
         return _prepareError(error.toString() + paths[0]);
-    } finally {
-        fp.close();
     }
 }
 
