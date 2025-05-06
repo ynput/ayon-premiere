@@ -470,6 +470,12 @@ function replaceItem(bin_id, paths, itemName, isImageSequence) {
         return _prepareError("There is no item with " + bin_id);
     }
 
+    if (!isImageSequence){
+        return _replaceMovieContent(
+            targetBinInfo, paths[0], itemName
+        )
+    }
+
     return _replaceBinContent(
         importFiles,
         [paths, itemName, isImageSequence, true, false],
@@ -492,7 +498,8 @@ function _replaceBinContent(importFunc, importArgs, targetBinInfo, itemName, pat
         for (var j = 0; j < targetBin.children.numItems; j++) {
             var oldProjectItem = targetBin.children[j];
             var newProjectItem = newBin.children[j];
-            repointMediaInSequences(oldProjectItem, newProjectItem);
+            var fullReplace = true;
+            repointMediaInSequences(oldProjectItem, newProjectItem, fullReplace);
         }
 
         // Replace old bin
@@ -511,7 +518,7 @@ function _replaceBinContent(importFunc, importArgs, targetBinInfo, itemName, pat
     }
 }
 
-function repointMediaInSequences(oldItem, newItem) {
+function repointMediaInSequences(oldItem, newItem, fullReplace) {
     var project = app.project;
     var sequences = project.sequences; // Get the list of sequences
 
@@ -535,13 +542,64 @@ function repointMediaInSequences(oldItem, newItem) {
                 var clip = track.clips[k];
                 if (clip.projectItem
                     && clip.projectItem.nodeId === oldItem.nodeId) {
-                    // Replace the project item with the new item
-                    clip.projectItem = newItem;
+                    if (fullReplace){
+                        // Replace the project item with the new item
+                        clip.projectItem = newItem;
+                    }
 
                     clip.name = newItem.name;
                 }
             }
         }
+    }
+}
+
+function _replaceMovieContent(targetBinInfo, path, itemName){
+    /** Possibly temporary function to replace movies
+     *
+     * Original update of image sequences and comps cannot
+     * keep trims, this one should.
+     * (Original update cannot do changeMediaPath)
+     *
+     * Args:
+     *     targetBinInfo (dict): target bin info (parent etc)
+     *     path (str): absolute path to new movie
+     *     itemName (str): name of updated Bin
+     *
+     * Returns:
+     *     {"item": foundItem, "parent": parentOfItem}
+     */
+    var targetBin = targetBinInfo["item"];
+
+    try {
+        for (var i = 0; i < targetBin.children.length; i++) {
+            var item = targetBin.children[i];
+
+            if (!item.canChangeMediaPath()) {
+                continue;
+            }
+
+            path = path.replace(/\//g, "\\");
+            item.changeMediaPath(path, true);
+
+            var file = new File(path);
+            item.name = file.name;
+
+            var fullReplace = false;  //rename only
+            repointMediaInSequences(item, item, fullReplace);
+
+            // expects only single movie in a bin
+            break;
+        }
+        targetBin.name = itemName;
+
+        return JSON.stringify({
+            name: itemName,
+            id: targetBin.nodeId
+        });
+
+    } catch (error) {
+        return _prepareError(error.toString() + paths[0]);
     }
 }
 
@@ -750,10 +808,17 @@ function logToFile(message) {
     }
 }
 
-// var items = replaceItem('000f4259',
-//     ['C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain/v020/ad_shot02_renderAe_animationMain_v020.1001.png',
-//      'C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain/v020/ad_shot02_renderAe_animationMain_v020.1002.png',
-//      'C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain/v020/ad_shot02_renderAe_animationMain_v020.1003.png'],
+// var items = replaceItem('000f427a',
+//     ["C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1001.exr"
+//         ,"C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1002.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1003.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1004.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1005.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1006.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1007.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1008.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1009.exr"
+//         , "C:/projects/ayon_dev/shot02/publish/render/renderAe_animationMain3/v157/ad_shot02_renderAe_animationMain3_v157.1010.exr"],
 //     'new name2', true);
 
 // var items = replaceItem(
