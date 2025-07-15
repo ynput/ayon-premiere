@@ -14,7 +14,7 @@ from wsrpc_aiohttp import (
 
 from qtpy import QtCore
 
-from ayon_core.lib import Logger, is_in_tests
+from ayon_core.lib import Logger, is_in_tests, env_value_to_bool
 from ayon_core.pipeline import install_host
 from ayon_core.addon import AddonsManager
 from ayon_core.tools.utils import host_tools, get_ayon_qt_app
@@ -47,6 +47,9 @@ def main(*subprocess_args):
     launcher = ProcessLauncher(subprocess_args)
     launcher.start()
 
+    env_workfiles_on_launch = os.getenv("AYON_PREMIERE_WORKFILES_ON_LAUNCH")
+    workfiles_on_launch = env_value_to_bool(value=env_workfiles_on_launch)
+
     if is_in_tests():
         manager = AddonsManager()
         premiere_addon = manager["premiere"]
@@ -59,7 +62,7 @@ def main(*subprocess_args):
             )
         )
 
-    elif os.environ.get("AYON_PREMIERE_WORKFILES_ON_LAUNCH", True):
+    elif workfiles_on_launch:
         save = False
         if os.getenv("WORKFILES_SAVE_AS"):
             save = True

@@ -77,6 +77,11 @@ class PremierePrelaunchHook(PreLaunchHook):
         ):
             new_launch_args.append(workfile_path)
 
+        workfile_startup = self.data.get("workfile_startup", False)
+        self.launch_context.env["AYON_PREMIERE_WORKFILES_ON_LAUNCH"] = (
+            str(workfile_startup).lower()
+        )
+
         # Append as whole list as these arguments should not be separated
         self.launch_context.launch_args.append(new_launch_args)
 
