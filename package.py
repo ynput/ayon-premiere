@@ -1,6 +1,6 @@
 name = "premiere"
 title = "Premiere"
-version = "0.1.4+dev"
+version = "0.1.5"
 app_host_name = "premiere"
 client_dir = "ayon_premiere"
 
