@@ -9,6 +9,7 @@ from ayon_premiere.api.pipeline import cache_and_get_instances
 class PremiereWorkfileCreator(AutoCreator):
     identifier = "workfile"
     product_type = "workfile"
+    product_base_type = "workfile"
 
     default_variant = "Main"
 
