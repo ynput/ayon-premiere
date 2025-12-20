@@ -1,7 +1,11 @@
+from __future__ import annotations
 import os
 
 from ayon_core.pipeline import get_representation_path
 from ayon_core.pipeline.load import LoadError
+from ayon_core.lib.transcoding import (
+    IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
+)
 
 from ayon_premiere import api
 from ayon_premiere.api.lib import get_unique_bin_name
@@ -19,15 +23,11 @@ class FileLoader(api.PremiereLoader):
     label = "Load file"
     icon = "image"
 
-    product_types = {
-        "image",
-        "plate",
-        "render",
-        "prerender",
-        "review",
-        "audio",
-    }
-    representations = {"*"}
+    product_types: set[str] = {"*"}
+    representations: set[str] = {"*"}
+    extensions: set[str] = set(
+        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
+    )
 
     def load(self, context, name=None, namespace=None, data=None):
         stub = self.get_stub()
