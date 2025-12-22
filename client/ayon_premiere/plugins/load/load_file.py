@@ -1,15 +1,18 @@
+from __future__ import annotations
 import os
 
 from ayon_core.pipeline import get_representation_path
 from ayon_core.pipeline.load import LoadError
+from ayon_core.lib.transcoding import (
+    IMAGE_EXTENSIONS, VIDEO_EXTENSIONS
+)
 
 from ayon_premiere import api
 from ayon_premiere.api.lib import get_unique_bin_name
 
 
-
 class FileLoader(api.PremiereLoader):
-    """Load footage (images/movied) or audio files
+    """Load footage (images/movies) or audio files
 
     Wraps loaded item into Bin (to be able to delete it if necessary)
     Stores the imported asset in a container named after the asset.
@@ -19,17 +22,13 @@ class FileLoader(api.PremiereLoader):
     label = "Load file"
     icon = "image"
 
-    product_types = {
-        "image",
-        "plate",
-        "render",
-        "prerender",
-        "review",
-        "audio",
-    }
-    representations = {"*"}
+    product_types: set[str] = {"*"}
+    representations: set[str] = {"*"}
+    extensions: set[str] = set(
+        ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
+    )
 
-    def load(self, context, name=None, namespace=None, data=None):
+    def load(self, context: dict, name=None, namespace=None, data=None):
         stub = self.get_stub()
         repr_id = context["representation"]["id"]
 
@@ -70,8 +69,8 @@ class FileLoader(api.PremiereLoader):
             self.__class__.__name__
         )
 
-    def update(self, container, context):
-        """ Switch asset or change version """
+    def update(self, container: dict, context: dict):
+        """Switch asset or change version"""
         stub = self.get_stub()
         stored_bin = container.pop("bin")
         old_metadata = stub.get_item_metadata(stored_bin)
@@ -92,8 +91,10 @@ class FileLoader(api.PremiereLoader):
         if len(repre_entity["files"]) > 1:
             is_image_sequence = True
             dir_path = os.path.dirname(paths[0])
-            paths = [os.path.join(dir_path, repre_file["name"])
-                     for repre_file in context["representation"]["files"]]
+            paths = [
+                os.path.join(dir_path, repre_file["name"])
+                for repre_file in context["representation"]["files"]
+            ]
 
         paths = [path.replace("\\", "/") for path in paths]
         new_bin = stub.replace_item(
@@ -109,9 +110,8 @@ class FileLoader(api.PremiereLoader):
             old_metadata
         )
 
-    def remove(self, container):
-        """
-            Removes element from scene: deletes layer + removes from Headline
+    def remove(self, container: dict):
+        """Removes element from scene: deletes layer + removes from Headline
         Args:
             container (dict): container to be removed - used to get layer_id
         """
@@ -123,7 +123,7 @@ class FileLoader(api.PremiereLoader):
     def switch(self, container, context):
         self.update(container, context)
 
-    def _get_bin_name(self, context, product_name, stub):
+    def _get_bin_name(self, context: dict, product_name: str, stub) -> str:
         existing_bins = stub.get_items(
             bins=True, sequences=False, footages=False)
         existing_bin_names = [bin_info.name for bin_info in existing_bins]
