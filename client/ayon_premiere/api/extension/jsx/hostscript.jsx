@@ -32,42 +32,61 @@ function getEnv(variable){
 var kPProPrivateProjectMetadataURI	= "http://ns.adobe.com/premierePrivateProjectMetaData/1.0/";
 // Define a name for your new sequence
 var sequenceName = "AYON Metadata - DO NOT DELETE";
-//var ayonMetadataId = "ayon.premiere.metadata";
 
 var ayonMetadataId = "Column.PropertyText.Description"; //this is visible under Clip.Description
 
-function getMetadata(){
-    /**
-     *  Returns payload in 'Label' field of project's metadata
-     *
-     **/
-    if (app.isDocumentOpen()) {
-        var ayon_metadata_seq = getMetadataSeq();
 
-        if (!ayon_metadata_seq){
-            ayon_metadata_seq = createMetadataSeq(sequenceName)
+/**
+ * Robust Cross-Platform Preset Path Resolver
+ * Avoids hardcoded version numbers like "2024"
+ */
+function getPresetPath() {
+    var presetName = "HD 1080p 29.97 fps.sqpreset";
+    var appFolder = new Folder(app.path);
+    var presetFile;
+
+    if ($.os.indexOf("Windows") !== -1) {
+        // Windows: app.path is the folder
+        presetFile = new File(appFolder.fsName + "\\Settings\\SequencePresets\\HD 1080p\\" + presetName);
+    } else {
+        // Mac: app.path is the folder containing the .app bundle
+        // The presets are inside: Premiere.app/Contents/Settings/SequencePresets/
+        var bundlePath = appFolder.fsName;
+        // Search inside the bundle
+        presetFile = new File(bundlePath + "/Contents/Settings/SequencePresets/HD 1080p/" + presetName);
+    }
+
+    if (presetFile.exists) {
+        return presetFile.fsName;
+    }
+
+    $.writeln("AYON Warning: Could not find preset at " + presetFile.fsName);
+    return ""; // Return empty string so Premiere uses default instead of throwing error
+}
+
+function getMetadata() {
+    if (app.isDocumentOpen()) {
+        var ayon_metadata_seq = getMetadataSeq(sequenceName);
+
+        if (!ayon_metadata_seq) {
+            ayon_metadata_seq = createMetadataSeq(sequenceName);
         }
+
         if (ayon_metadata_seq) {
             if (ExternalObject.AdobeXMPScript === undefined) {
                 ExternalObject.AdobeXMPScript = new ExternalObject('lib:AdobeXMPScript');
             }
-            if (ExternalObject.AdobeXMPScript !== undefined) { // safety-conscious!
-                var projectMetadata	= ayon_metadata_seq.projectItem.getProjectMetadata();
-                var xmp	= new XMPMeta(projectMetadata);
 
-                var existing_metadata = xmp.doesPropertyExist(kPProPrivateProjectMetadataURI, ayonMetadataId);
-                if (!existing_metadata){
-                    existing_metadata = "[]";
-                    app.project.addPropertyToProjectMetadataSchema(ayonMetadataId, ayonMetadataId, 2);
-                    xmp.setProperty(kPProPrivateProjectMetadataURI, ayonMetadataId, existing_metadata);
-                    var str = xmp.serialize();
-                    ayon_metadata_seq.projectItem.setProjectMetadata(str, [ayonMetadataId]);
-                }
-                return xmp.getProperty(kPProPrivateProjectMetadataURI, ayonMetadataId);
+            var projectMetadata = ayon_metadata_seq.projectItem.getProjectMetadata();
+            var xmp = new XMPMeta(projectMetadata);
 
+            if (!xmp.doesPropertyExist(kPProPrivateProjectMetadataURI, ayonMetadataId)) {
+                app.project.addPropertyToProjectMetadataSchema(ayonMetadataId, ayonMetadataId, 2);
+                xmp.setProperty(kPProPrivateProjectMetadataURI, ayonMetadataId, "[]");
+                var str = xmp.serialize();
+                ayon_metadata_seq.projectItem.setProjectMetadata(str, [ayonMetadataId]);
             }
-        } else {
-            return _prepareError("No file open currently");
+            return xmp.getProperty(kPProPrivateProjectMetadataURI, ayonMetadataId).value;
         }
     }
     return _prepareSingleValue("");
@@ -81,17 +100,25 @@ function imprint(payload){
      *     payload (string): json content
      */
     if (app.isDocumentOpen()) {
-        var ayon_metadata_seq = getMetadataSeq();
-        var projectMetadata	= ayon_metadata_seq.projectItem.getProjectMetadata();
-        var xmp	= new XMPMeta(projectMetadata);
+        // FIXED: was passing function getMetadataSeq instead of sequenceName string
+        var ayon_metadata_seq = getMetadataSeq(sequenceName);
 
-        if (ExternalObject.AdobeXMPScript === undefined){
-            ExternalObject.AdobeXMPScript =
-                new ExternalObject('lib:AdobeXMPScript');
+        if (!ayon_metadata_seq) return;
+
+        if (ExternalObject.AdobeXMPScript === undefined) {
+            ExternalObject.AdobeXMPScript = new ExternalObject('lib:AdobeXMPScript');
         }
-        xmp.setProperty(kPProPrivateProjectMetadataURI, ayonMetadataId, payload);
+
+        var projectMetadata = ayon_metadata_seq.projectItem.getProjectMetadata();
+        var xmp = new XMPMeta(projectMetadata);
+
+        xmp.setProperty(
+            kPProPrivateProjectMetadataURI, ayonMetadataId, payload
+        );
         var str = xmp.serialize();
-        ayon_metadata_seq.projectItem.setProjectMetadata(str, [ayonMetadataId]);
+        ayon_metadata_seq.projectItem.setProjectMetadata(
+            str, [ayonMetadataId]
+        );
     }
 }
 
@@ -570,25 +597,23 @@ function _replaceMovieContent(targetBinInfo, path, itemName){
      *     {"item": foundItem, "parent": parentOfItem}
      */
     var targetBin = targetBinInfo["item"];
-
     try {
-        for (var i = 0; i < targetBin.children.length; i++) {
+        // Use .numItems for safety across versions
+        var itemCount = targetBin.children.numItems || targetBin.children.length;
+
+        for (var i = 0; i < itemCount; i++) {
             var item = targetBin.children[i];
+            if (!item.canChangeMediaPath()) continue;
 
-            if (!item.canChangeMediaPath()) {
-                continue;
-            }
+            // IMPORTANT: Mac ExtendScript does NOT like backslashes.
+            // Using File(path).fsName ensures the OS gets exactly what it needs.
+            var correctedPath = new File(path).fsName;
+            item.changeMediaPath(correctedPath, true);
 
-            path = path.replace(/\//g, "\\");
-            item.changeMediaPath(path, true);
-
-            var file = new File(path);
+            var file = new File(correctedPath);
             item.name = file.name;
 
-            var fullReplace = false;  //rename only
-            repointMediaInSequences(item, item, fullReplace);
-
-            // expects only single movie in a bin
+            repointMediaInSequences(item, item, false);
             break;
         }
         targetBin.name = itemName;
@@ -597,9 +622,8 @@ function _replaceMovieContent(targetBinInfo, path, itemName){
             name: itemName,
             id: targetBin.nodeId
         });
-
     } catch (error) {
-        return _prepareError(error.toString() + paths[0]);
+        return _prepareError(error.toString());
     }
 }
 
@@ -748,19 +772,17 @@ function printMsg(msg){
     alert(msg);
 }
 
-function getMetadataSeq(){
-    /**
+/**
      * Returns dummy sequence used to store AYON metadata
      */
+function getMetadataSeq(name) {
     var sequences = app.project.sequences;
-    if (sequences){
-        for (var i = 0; i < sequences.length; i++) {
-            var sequence = sequences[i];
-            if (sequence.name == sequenceName){
-                return sequence;
-            }
+    for (var i = 0; i < sequences.numSequences; i++) {
+        if (sequences[i].name === name) {
+            return sequences[i];
         }
     }
+    return null;
 }
 
 function createMetadataSeq(sequenceName){
@@ -771,16 +793,12 @@ function createMetadataSeq(sequenceName){
      *
      * This approach limits triggering sequence dialog for artist!
      */
-    var project = app.project;
-
     // random preset, just to not show dialog
-    var presetPath = app.path + "Settings/SequencePresets/HD 1080p/HD 1080p 29.97 fps.sqpreset";
+    var presetPath = getPresetPath();
 
-    if ($.os.indexOf("Windows") !== -1) {
-        presetPath = presetPath.replace(/\//g, "\\");
-    }
-
-    var newSequence = project.newSequence(sequenceName, presetPath);
+    var newSequence = app.project.createNewSequence(
+        sequenceName, presetPath
+    );
     return newSequence
 }
 
@@ -793,7 +811,16 @@ function _prepareError(error_msg){
 
 function logToFile(message) {
     // Specify the path to the log file
-    var logFilePath = new File("C:/projects/logfile.txt"); // Change this path as needed
+    // Use cross-platform path handling
+    var logFilePath;
+    if ($.os.indexOf("Windows") !== -1) {
+        logFilePath = new File("C:/projects/logfile.txt");
+    } else if ($.os.indexOf("Mac") !== -1) {
+        logFilePath = new File("/Volumes/projects/logfile.txt");
+    } else {
+        // Default to current directory for other platforms
+        logFilePath = new File("./logfile.txt");
+    }
 
     // Open the file in append mode
     if (logFilePath.open("a")) { // "a" for append mode
