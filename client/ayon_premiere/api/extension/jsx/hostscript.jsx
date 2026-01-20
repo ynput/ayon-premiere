@@ -32,7 +32,6 @@ function getEnv(variable){
 var kPProPrivateProjectMetadataURI	= "http://ns.adobe.com/premierePrivateProjectMetaData/1.0/";
 // Define a name for your new sequence
 var sequenceName = "AYON Metadata - DO NOT DELETE";
-//var ayonMetadataId = "ayon.premiere.metadata";
 
 var ayonMetadataId = "Column.PropertyText.Description"; //this is visible under Clip.Description
 
@@ -43,7 +42,6 @@ function getMetadata(){
      **/
     if (app.isDocumentOpen()) {
         var ayon_metadata_seq = getMetadataSeq();
-
         if (!ayon_metadata_seq){
             ayon_metadata_seq = createMetadataSeq(sequenceName)
         }
@@ -55,15 +53,25 @@ function getMetadata(){
                 var projectMetadata	= ayon_metadata_seq.projectItem.getProjectMetadata();
                 var xmp	= new XMPMeta(projectMetadata);
 
-                var existing_metadata = xmp.doesPropertyExist(kPProPrivateProjectMetadataURI, ayonMetadataId);
+                var existing_metadata = xmp.doesPropertyExist(
+                    kPProPrivateProjectMetadataURI, ayonMetadataId);
                 if (!existing_metadata){
                     existing_metadata = "[]";
-                    app.project.addPropertyToProjectMetadataSchema(ayonMetadataId, ayonMetadataId, 2);
-                    xmp.setProperty(kPProPrivateProjectMetadataURI, ayonMetadataId, existing_metadata);
+                    app.project.addPropertyToProjectMetadataSchema(
+                        ayonMetadataId, ayonMetadataId, 2
+                    );
+                    xmp.setProperty(
+                        kPProPrivateProjectMetadataURI,
+                        ayonMetadataId,
+                        existing_metadata
+                    );
                     var str = xmp.serialize();
-                    ayon_metadata_seq.projectItem.setProjectMetadata(str, [ayonMetadataId]);
+                    ayon_metadata_seq.projectItem.setProjectMetadata(
+                        str, [ayonMetadataId]);
                 }
-                return xmp.getProperty(kPProPrivateProjectMetadataURI, ayonMetadataId);
+                return xmp.getProperty(
+                    kPProPrivateProjectMetadataURI, ayonMetadataId
+                );
 
             }
         } else {
@@ -579,7 +587,11 @@ function _replaceMovieContent(targetBinInfo, path, itemName){
                 continue;
             }
 
-            path = path.replace(/\//g, "\\");
+            // Convert path separators based on OS
+            if ($.os.indexOf("Windows") !== -1) {
+                path = path.replace(/\//g, "\\");
+            }
+            // macOS/Linux already use forward slashes, no conversion needed
             item.changeMediaPath(path, true);
 
             var file = new File(path);
@@ -761,6 +773,7 @@ function getMetadataSeq(){
             }
         }
     }
+    return null;
 }
 
 function createMetadataSeq(sequenceName){
@@ -774,12 +787,12 @@ function createMetadataSeq(sequenceName){
     var project = app.project;
 
     // random preset, just to not show dialog
-    var presetPath = app.path + "Settings/SequencePresets/HD 1080p/HD 1080p 29.97 fps.sqpreset";
-
     if ($.os.indexOf("Windows") !== -1) {
+        var presetPath = app.path + "Settings/SequencePresets/HD 1080p/HD 1080p 29.97 fps.sqpreset";
         presetPath = presetPath.replace(/\//g, "\\");
+    }else{
+        var presetPath = app.path + "/Contents/Settings/SequencePresets/HD 1080p/HD 1080p 29.97 fps.sqpreset";
     }
-
     var newSequence = project.newSequence(sequenceName, presetPath);
     return newSequence
 }
@@ -793,7 +806,15 @@ function _prepareError(error_msg){
 
 function logToFile(message) {
     // Specify the path to the log file
-    var logFilePath = new File("C:/projects/logfile.txt"); // Change this path as needed
+    // Use cross-platform path for log file
+    var logFilePath;
+    if ($.os.indexOf("Windows") !== -1) {
+        logFilePath = new File("C:/projects/logfile.txt");
+    } else if ($.os.indexOf("Mac") !== -1) {
+        logFilePath = new File("/tmp/ayon_premiere_log.txt");
+    } else {
+        logFilePath = new File("/tmp/ayon_premiere_log.txt");
+    }
 
     // Open the file in append mode
     if (logFilePath.open("a")) { // "a" for append mode
