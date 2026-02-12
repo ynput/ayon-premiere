@@ -73,9 +73,9 @@ class PremierePrelaunchHook(PreLaunchHook):
         if (
             self.data.get("start_last_workfile")
             and workfile_path
-            and os.path.exists(workfile_path)
+            and os.path.exists(os.path.normpath(workfile_path))
         ):
-            new_launch_args.append(workfile_path)
+            new_launch_args.append(os.path.normpath(workfile_path))
 
         workfile_startup = self.data.get("workfile_startup", False)
         self.launch_context.env["AYON_PREMIERE_WORKFILES_ON_LAUNCH"] = (
