@@ -1,6 +1,6 @@
 name = "premiere"
 title = "Premiere"
-version = "0.1.9+dev"
+version = "0.1.10"
 app_host_name = "premiere"
 client_dir = "ayon_premiere"
 project_can_override_addon_version = True
