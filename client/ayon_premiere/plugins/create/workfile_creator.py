@@ -8,8 +8,8 @@ from ayon_premiere.api.pipeline import cache_and_get_instances
 
 class PremiereWorkfileCreator(AutoCreator):
     identifier = "workfile"
-    product_type = "workfile"
     product_base_type = "workfile"
+    product_type = product_base_type
 
     default_variant = "Main"
 
@@ -17,12 +17,17 @@ class PremiereWorkfileCreator(AutoCreator):
         return []
 
     def collect_instances(self):
+        product_type = self.product_type or self.product_base_type
         for instance_data in cache_and_get_instances(self):
             creator_id = instance_data.get("creator_identifier")
             if creator_id == self.identifier:
                 product_name = instance_data["productName"]
                 instance = CreatedInstance(
-                    self.product_type, product_name, instance_data, self
+                    product_base_type=self.product_base_type,
+                    product_type=product_type,
+                    product_name=product_name,
+                    data=instance_data,
+                    creator=self,
                 )
                 self._add_instance_to_context(instance)
 
@@ -33,7 +38,7 @@ class PremiereWorkfileCreator(AutoCreator):
     def create(self, options=None):
         existing_instance = None
         for instance in self.create_context.instances:
-            if instance.product_type == self.product_type:
+            if instance.product_base_type == self.product_base_type:
                 existing_instance = instance
                 break
 
@@ -50,6 +55,7 @@ class PremiereWorkfileCreator(AutoCreator):
         if existing_instance is not None:
             existing_folder_path = existing_instance.get("folderPath")
 
+        product_type = self.product_type or self.product_base_type
         if existing_instance is None:
             product_name = self.get_product_name(
                 project_name=project_name,
@@ -58,21 +64,13 @@ class PremiereWorkfileCreator(AutoCreator):
                 task_entity=task_entity,
                 variant=self.default_variant,
                 host_name=host_name,
+                product_type=product_type,
             )
             data = {
                 "folderPath": folder_path,
                 "task": task_name,
                 "variant": self.default_variant,
             }
-            data.update(self.get_dynamic_data(
-                project_name,
-                folder_entity,
-                task_entity,
-                self.default_variant,
-                host_name,
-                None,
-            ))
-
             new_instance = CreatedInstance(
                 self.product_type, product_name, data, self
             )
@@ -93,6 +91,7 @@ class PremiereWorkfileCreator(AutoCreator):
                 task_entity=task_entity,
                 variant=self.default_variant,
                 host_name=host_name,
+                product_type=product_type,
             )
             existing_instance["folderPath"] = folder_path
             existing_instance["task"] = task_name
