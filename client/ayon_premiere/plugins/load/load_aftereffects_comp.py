@@ -16,7 +16,8 @@ class AECompLoader(api.PremiereLoader):
     label = "Load AfterEffects Compositions"
     icon = "image"
     product_types = {"workfile"}
-    representations = {"aep"}
+    representations = {"*"}
+    extensions = {"aep"}
 
     def load(
         self,
