@@ -22,7 +22,8 @@ class FileLoader(api.PremiereLoader):
     label = "Load file"
     icon = "image"
 
-    product_types: set[str] = {"*"}
+    product_base_types: set[str] = {"*"}
+    product_types = product_base_types
     representations: set[str] = {"*"}
     extensions: set[str] = set(
         ext.lstrip(".") for ext in IMAGE_EXTENSIONS.union(VIDEO_EXTENSIONS)
