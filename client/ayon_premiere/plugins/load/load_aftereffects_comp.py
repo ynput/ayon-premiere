@@ -17,7 +17,8 @@ class AECompLoader(api.PremiereLoader):
     icon = "image"
     product_base_types = {"workfile"}
     product_types = product_base_types
-    representations = {"aep"}
+    representations = {"*"}
+    extensions = {"aep"}
 
     def load(
         self,
