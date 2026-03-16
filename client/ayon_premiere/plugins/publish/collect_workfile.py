@@ -20,7 +20,7 @@ class CollectWorkfile(pyblish.api.ContextPlugin):
     def process(self, context):
         workfile_instance = None
         for instance in context:
-            if instance.data["productType"] == "workfile":
+            if instance.data["productBaseType"] == "workfile":
                 self.log.debug("Workfile instance found")
                 workfile_instance = instance
                 break
