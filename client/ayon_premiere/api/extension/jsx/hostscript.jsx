@@ -551,8 +551,21 @@ function repointMediaInSequences(oldItem, newItem, fullReplace) {
                 if (clip.projectItem
                     && clip.projectItem.nodeId === oldItem.nodeId) {
                     if (fullReplace){
+                        // Store the original trims
+                        var originalInTicks = clip.inPoint.ticks;
+                        var originalOutTicks = clip.outPoint.ticks;
+
                         // Replace the project item with the new item
                         clip.projectItem = newItem;
+
+                        // Restore the original trims
+                        var restoredIn = new Time();
+                        restoredIn.ticks = originalInTicks;
+                        clip.inPoint = restoredIn;
+
+                        var restoredOut = new Time();
+                        restoredOut.ticks = originalOutTicks;
+                        clip.outPoint = restoredOut;
                     }
 
                     clip.name = newItem.name;
