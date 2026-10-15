@@ -484,6 +484,16 @@ function replaceItem(bin_id, paths, itemName, isImageSequence) {
         )
     }
 
+    // Prefer repointing existing item to first frame of new sequence,
+    // that keeps trims of clips in sequences intact.
+    var firstFramePath = paths.slice().sort()[0];
+    if (_canChangeMediaPath(targetBinInfo)) {
+        return _replaceMovieContent(
+            targetBinInfo, firstFramePath, itemName
+        )
+    }
+
+    // Fallback - import new bin and repoint clips (might lose trims)
     return _replaceBinContent(
         importFiles,
         [paths, itemName, isImageSequence, true, false],
@@ -624,8 +634,26 @@ function _replaceMovieContent(targetBinInfo, path, itemName){
         });
 
     } catch (error) {
-        return _prepareError(error.toString() + paths[0]);
+        return _prepareError(error.toString() + path);
     }
+}
+
+function _canChangeMediaPath(targetBinInfo){
+    /** Checks if any item in bin supports changeMediaPath
+     *
+     * Args:
+     *     targetBinInfo (dict): target bin info (parent etc)
+     *
+     * Returns:
+     *     bool
+     */
+    var targetBin = targetBinInfo["item"];
+    for (var i = 0; i < targetBin.children.numItems; i++) {
+        if (targetBin.children[i].canChangeMediaPath()) {
+            return true;
+        }
+    }
+    return false;
 }
 
 function getBinAndParentById(nodeId) {
